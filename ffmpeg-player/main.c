@@ -1,6 +1,6 @@
 // Barebones FFmpeg + SDL3 video playback
 //
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: 0BSD
 //
 // - Assumes video and audio streams are both present
 // - Assumes both streams start at 0

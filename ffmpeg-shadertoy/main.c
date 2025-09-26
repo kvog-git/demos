@@ -1,6 +1,6 @@
 // ShaderToy video renderer
 //
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: 0BSD
 //
 // Usage: ffmpeg-shadertoy -w <width> -h <height> -t <seconds> -fps <fps> -crf <crf> <input.glsl> <output.mp4>
 //
