@@ -5,6 +5,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(common INTERFACE)
 
+set(FETCHCONTENT_QUIET FALSE)
+include(FetchContent)
+
 # -----------------------------------------------------------------------------
 # Language options
 # -----------------------------------------------------------------------------
@@ -24,6 +27,34 @@ endif()
 if(NOT MINGW)
   target_compile_options(common INTERFACE -fsanitize=address)
   target_link_options(common    INTERFACE -fsanitize=address)
+endif()
+
+# -----------------------------------------------------------------------------
+# Dependency: Dear ImGui
+# -----------------------------------------------------------------------------
+if(DEMO_NEEDS_DEAR_IMGUI)
+  FetchContent_Declare(
+    DEAR_IMGUI
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.92.4 
+    GIT_PROGRESS   TRUE
+    GIT_SHALLOW    TRUE
+  )
+  FetchContent_MakeAvailable(DEAR_IMGUI)
+  message("dear_imgui_SOURCE_DIR: ${dear_imgui_SOURCE_DIR}")
+  add_library(common_dear_imgui STATIC
+    "${dear_imgui_SOURCE_DIR}/imgui.cpp"
+    "${dear_imgui_SOURCE_DIR}/imgui_demo.cpp"
+    "${dear_imgui_SOURCE_DIR}/imgui_draw.cpp"
+    "${dear_imgui_SOURCE_DIR}/imgui_tables.cpp"
+    "${dear_imgui_SOURCE_DIR}/imgui_widgets.cpp"
+  )
+  target_include_directories(common_dear_imgui PUBLIC
+    "${dear_imgui_SOURCE_DIR}"
+    "${dear_imgui_SOURCE_DIR}/backends"
+  )
+  target_compile_features(common_dear_imgui PRIVATE cxx_std_17)
+  target_link_libraries(common INTERFACE common_dear_imgui)
 endif()
 
 # -----------------------------------------------------------------------------
