@@ -188,6 +188,7 @@ int main(int argc, char* argv[])
   GLuint u_time  = GL(glGetUniformLocation(prog, "u_time"));
   GLuint u_mode  = GL(glGetUniformLocation(prog, "u_mode"));
   GLuint u_sigma = GL(glGetUniformLocation(prog, "u_sigma"));
+  GLuint u_steps = GL(glGetUniformLocation(prog, "u_steps"));
 
   bool running = true;
   while (running) {
@@ -213,26 +214,24 @@ int main(int argc, char* argv[])
     static int   c_mode  = 0;
     static float c_sigma = 4.0f;
     static float c_zoom  = 1.5f;
+    static int   c_steps = 64;
     ImGui::SetNextWindowPos(ImVec2(15, 15));
     ImGui::SetNextWindowSize(ImVec2(150, 768 - 30));
     if (ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
       ImGui::SeparatorText("Controls");
       ImGui::DragFloat("Zoom", &c_zoom, 0.05f, 0.1f, 3.0f);
       ImGui::SeparatorText("Settings");
-      const char* modes[] = { "Basic" };
+      const char* modes[] = { "Basic", "Fade", "Waves", };
       if (ImGui::BeginCombo("Mode", modes[c_mode])) {
         for (int i = 0; i < IM_ARRAYSIZE(modes); ++i) {
-          if (ImGui::Selectable(modes[c_mode], i == c_mode)) {
+          if (ImGui::Selectable(modes[i], i == c_mode)) {
             c_mode = i;
           }
         }
         ImGui::EndCombo();
       }
-      switch (c_mode) {
-      case 0: {
-        ImGui::DragFloat("Sigma", &c_sigma, 0.05);
-      } break;
-      }
+      ImGui::DragInt("Steps", &c_steps);
+      ImGui::DragFloat("Sigma", &c_sigma, 0.05);
       ImGui::End();
     }
 
@@ -263,6 +262,7 @@ int main(int argc, char* argv[])
     GL(glUniform1f(u_time, t));
     GL(glUniform1i(u_mode, c_mode));
     GL(glUniform1f(u_sigma, c_sigma));
+    GL(glUniform1i(u_steps, c_steps));
 
     GL(glDrawElements(GL_TRIANGLES, 3 * 12, GL_UNSIGNED_SHORT, NULL));
 
