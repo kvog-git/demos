@@ -17,6 +17,7 @@
 #include "imgui_impl_opengl3.cpp"
 #include "imgui_impl_sdl3.cpp"
 
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 
@@ -266,7 +267,7 @@ static float TokenFloat(const char* tok, int len)
 
 static void ParseShaderMetadata(ShaderMetadata* sm, const char* src)
 {
-  memset(sm, 0, sizeof(*sm));
+  *sm = ShaderMetadata();
 
   while ((src = strchr(src, '@'))) {
     // @model <quad|cube>
