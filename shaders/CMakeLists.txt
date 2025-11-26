@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-project(shaders CXX)
+project(shaders)
 
 set(DEMO_NEEDS_DEAR_IMGUI TRUE)
 set(DEMO_NEEDS_SDL3       TRUE)

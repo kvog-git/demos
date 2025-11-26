@@ -25,6 +25,8 @@
 // Geometry
 // --------------------------------------------------------------------------------
 
+constexpr float Pi = 3.1415926535f;
+
 template <typename T>
 static inline T Min(T lhs, T rhs)
 {
@@ -45,7 +47,7 @@ static inline T Clamp(T val, T vmin, T vmax)
 
 static inline float Radians(float degrees)
 {
-  return degrees * M_PI / 180.0f;
+  return degrees * Pi / 180.0f;
 }
 
 class Vec2
