@@ -23,6 +23,13 @@ else()
   target_compile_options(common INTERFACE -Wall -Wextra -Wpedantic)
 endif()
 
+# -----------------------------------------------------------------------------
+# Disable stupid warnings on Windows
+# -----------------------------------------------------------------------------
+if(WIN32)
+  target_compile_definitions(common INTERFACE _CRT_SECURE_NO_WARNINGS)
+endif()
+
 # @@ should do a test compile to see if asan is actually available
 if(NOT MINGW)
   target_compile_options(common INTERFACE -fsanitize=address)
