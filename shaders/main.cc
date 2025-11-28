@@ -390,6 +390,7 @@ static struct
   SDL_Window*     wnd;
   ShaderMetadata  sm;
   bool            ui_hidden;
+  bool            pause;
 
   GLuint shader;
 
@@ -661,7 +662,9 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
     GL(glUniform2f(u_id, (float)wnd_x, (float)wnd_y));
   }
   if ((u_id = glGetUniformLocation(G.shader, "u_time")) != -1) {
-    GL(glUniform1f(u_id, SDL_GetTicks() / 1e3f));
+    if (!G.pause) {
+      GL(glUniform1f(u_id, SDL_GetTicks() / 1e3f));
+    }
   }
 
   if (Is3D()) {
@@ -712,7 +715,7 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
   SDL_GetWindowSize(G.wnd, NULL, &wnd_height);
   if (!G.ui_hidden) {
     ImGui::SetNextWindowPos(ImVec2(15.0f, 15.0f), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(200.0f, wnd_height - 30.0f), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(300.0f, wnd_height - 30.0f), ImGuiCond_Once);
     ImGuiWindowFlags flags = 
       ImGuiWindowFlags_NoTitleBar |
       ImGuiWindowFlags_NoMove     |
@@ -720,6 +723,7 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
     if (ImGui::Begin("Test", NULL, flags)) {
       ImGui::SeparatorText("Controls");
       ImGui::Text("Tab: Toggle UI");
+      ImGui::Checkbox("Pause time", &G.pause);
       if (G.sm.uniforms.size() > 0) {
         ImGui::SeparatorText("Uniforms");
         for (auto& u : G.sm.uniforms) {
