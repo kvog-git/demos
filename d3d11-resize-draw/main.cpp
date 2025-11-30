@@ -11,7 +11,6 @@
 // --------------------------------------------------------------------------------
 // Method 1: Don't do anything special. This is just to highlight the problem.
 // --------------------------------------------------------------------------------
-// #define ACTIVE_METHOD 1
 
 // --------------------------------------------------------------------------------
 // Method 2: Set CS_VREDRAW | CS_HREDRAW and render in WM_PAINT.
@@ -31,7 +30,7 @@
 // If you use WM_TIMER alone, there is a small gap at the side of the window when
 // resizing, but it's barely visible.
 // 
-// If you draw on WM_TIMER and WM_SIZE, there is no bar, but there may be redundant
+// If you draw on WM_TIMER and WM_SIZE, there is no gap, but there may be redundant
 // draw calls.
 // 
 // Creating dialogs in WM_TIMER and WM_SIZE doesn't seem to be an issue.
@@ -87,7 +86,7 @@ static void CreateDemoWindow(UINT class_style, WNDPROC wndproc)
     WNDCLASSW wcl = { .style = class_style, .lpfnWndProc = wndproc, .hInstance = GetModuleHandleW(0), .lpszClassName = L"d3d11-resize-draw"};
     RegisterClassW(&wcl);
 
-    G.hwnd = CreateWindowExW(0, wcl.lpszClassName, wcl.lpszClassName, WS_OVERLAPPEDWINDOW, 0, 0, 1024, 768, 0, 0, 0, 0);
+    G.hwnd = CreateWindowExW(0, wcl.lpszClassName, wcl.lpszClassName, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 512, 512, 0, 0, 0, 0);
     Assert(G.hwnd);
 }
 
