@@ -1,5 +1,10 @@
-.DS_Store
-.cache
-.vs
+*.DS_Store
+*.cache
+*.cso
+*.exe
+*.pdb
+*.vcxproj.user
+*.vs
 bin
 build
+d3d11-re.*

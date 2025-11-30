@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="d3d11-resize-draw.vcxproj" Id="53c908fe-a2be-4c82-8088-06bda7620da6" />
+</Solution>
