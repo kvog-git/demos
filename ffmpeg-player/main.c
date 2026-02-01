@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
   }
 
-  SDL_Window* wnd = SDL_CreateWindow("ffmpeg-player", vdec.cpar->width, vdec.cpar->height, SDL_WINDOW_HIDDEN);
+  SDL_Window* wnd = SDL_CreateWindow("ffmpeg-player", 64, 64, SDL_WINDOW_HIDDEN);
   if (!wnd) {
     fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
     return EXIT_FAILURE;
@@ -126,7 +126,6 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Failed to create renderer: %s\n", SDL_GetError());
     return EXIT_FAILURE;
   }
-
   SDL_SetRenderVSync(rnd, 1);
 
   AVPacket* avp      = av_packet_alloc();
@@ -135,17 +134,16 @@ int main(int argc, char* argv[])
   SDL_assert(avp && avf && avf_sdl);
 
   // Use a YUV texture when blitting to the screen. Most video files are decoded to
-  // AV_PIX_FMT_YUV420P frames anyway, but convert anyway to use the same code path.
-  SDL_Texture* tex = SDL_CreateTexture(rnd, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING,
-                                       vdec.cpar->width, vdec.cpar->height);
+  // AV_PIX_FMT_YUV420P frames anyway, but convert regardless for a unified code path.
+  SDL_Texture* tex = SDL_CreateTexture(rnd, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, ww, wh);
   if (!tex) {
     fprintf(stderr, "Failed to create texture: %s\n", SDL_GetError());
     return EXIT_FAILURE;
   }
 
   avf_sdl->format = AV_PIX_FMT_YUV420P;
-  avf_sdl->width  = vdec.cpar->width;
-  avf_sdl->height = vdec.cpar->height;
+  avf_sdl->width  = ww;
+  avf_sdl->height = wh;
   if ((ret = av_frame_get_buffer(avf_sdl, 32)) < 0) {
     fprintf(stderr, "Failed to allocate frame: %s\n", av_err2str(ret));
     return EXIT_FAILURE;
@@ -156,7 +154,7 @@ int main(int argc, char* argv[])
   }
 
   struct SwsContext* sws = sws_getContext(vdec.cpar->width, vdec.cpar->height, vdec.cpar->format,
-                                          vdec.cpar->width, vdec.cpar->height, AV_PIX_FMT_YUV420P,
+                                          ww,               wh,                AV_PIX_FMT_YUV420P,
                                           0, NULL, NULL, NULL);
   if (!sws) {
     fprintf(stderr, "Failed to create libswscale context\n");
