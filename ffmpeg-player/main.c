@@ -8,10 +8,6 @@
 // ref: https://github.com/libsdl-org/SDL/blob/main/test/testffmpeg.c
 // ref: https://code.ffmpeg.org/FFmpeg/FFmpeg/src/branch/master/doc/examples/demux_decode.c
 //
-// Changelog:
-// - 9/17/25: Initial release
-// - 9/18/25: libswscale, flush decoders
-//
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>

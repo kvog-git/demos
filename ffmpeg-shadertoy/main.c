@@ -9,9 +9,6 @@
 // ref: https://code.ffmpeg.org/FFmpeg/FFmpeg/src/branch/master/doc/examples/mux.c
 // ref: https://code.ffmpeg.org/FFmpeg/FFmpeg/src/branch/master/doc/examples/encode_video.c
 //
-// Changelog:
-// - 9/18/25: Initial release
-//
 
 #define GLAD_GL_IMPLEMENTATION
 #include "../common/c_cpp/thirdparty/glad33/glad33.h"
