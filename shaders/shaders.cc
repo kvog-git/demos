@@ -1,11 +1,7 @@
-// --------------------------------------------------------------------------------
-// OpenGL shader sandbox
-//
 // SPDX-License-Identifier: 0BSD
-// --------------------------------------------------------------------------------
 
 #define GLAD_GL_IMPLEMENTATION
-#include "../common/c_cpp/thirdparty/glad33/glad33.h"
+#include "shaders.hh"
 
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL.h>
@@ -13,7 +9,6 @@
 #include <SDL3/SDL_opengl.h>
 
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#include "imgui.h"
 #include "imgui_impl_opengl3.cpp"
 #include "imgui_impl_sdl3.cpp"
 
@@ -194,223 +189,37 @@ public:
 };
 
 // --------------------------------------------------------------------------------
-// Shader metadata parser
-// --------------------------------------------------------------------------------
-
-enum : int
-{
-  SHADER_MODEL_TYPE_INVALID = 0,
-  SHADER_MODEL_TYPE_QUAD,
-  SHADER_MODEL_TYPE_CUBE,
-};
-
-enum : int
-{
-  SHADER_UNIFORM_TYPE_INVALID = 0,
-  SHADER_UNIFORM_TYPE_INT,
-  SHADER_UNIFORM_TYPE_FLOAT,
-  SHADER_UNIFORM_TYPE_COLOR,
-};
-
-struct ShaderUniform
-{
-  char name[32];
-  int  type;
-  int   val_i1;
-  float val_fl;
-  Vec4  val_v4;
-  int min_i;
-  int max_i;
-};
-
-struct ShaderMetadata
-{
-  int                     model;
-  ImVector<ShaderUniform> uniforms;
-};
-
-static bool ReadToken(const char** src, const char** out, int* len)
-{
-  while (isspace(**src)) {
-    ++*src;
-  }
-  if (!**src) {
-    return false;
-  }
-
-  *len = 0;
-  *out = *src;
-  while (**src && !isspace(**src)) {
-    ++*src;
-    ++*len;
-  }
-
-  return true;
-}
-
-static bool TokenEq(const char* tok, int len, const char* str)
-{
-  return (int)strlen(str) == len && !strncmp(tok, str, len);
-}
-
-static int TokenInt(const char* tok, int len)
-{
-  char tmp[64] = { };
-  strncpy(tmp, tok, Min((int)sizeof(tmp), len));
-  return atoi(tmp);
-}
-
-static float TokenFloat(const char* tok, int len)
-{
-  char tmp[64] = { };
-  strncpy(tmp, tok, Min((int)sizeof(tmp), len));
-  return strtof(tmp, NULL);
-}
-
-static void ParseShaderMetadata(ShaderMetadata* sm, const char* src)
-{
-  *sm = ShaderMetadata();
-
-  while ((src = strchr(src, '@'))) {
-    // @model <quad|cube>
-    if (!strncmp(src, "@model", 6)) {
-      src += 6;
-
-      const char* tok;
-      int         len;
-      if (!ReadToken(&src, &tok, &len)) {
-        SDL_Log("@model: Missing parameter");
-        continue;
-      }
-
-      if (TokenEq(tok, len, "quad")) {
-        sm->model = SHADER_MODEL_TYPE_QUAD;
-      } else if (TokenEq(tok, len, "cube")) {
-        sm->model = SHADER_MODEL_TYPE_CUBE;
-      } else {
-        SDL_Log("@model: Invalid parameter: %.*s", len, tok);
-      }
-
-      continue;
-    }
-
-    // @uniform <type> <name> <val>
-    else if (!strncmp(src, "@uniform", 8)) {
-      src += 8;
-
-      ShaderUniform u = { };
-
-      const char* tok;
-      int         len;
-      if (!ReadToken(&src, &tok, &len)) {
-        SDL_Log("@uniform: Missing parameter");
-        continue;
-      }
-      const char* type_tok = tok;
-      int         type_len = len;
-
-      if (!ReadToken(&src, &tok, &len)) {
-        SDL_Log("@uniform: Missing parameter");
-        continue;
-      }
-      strncpy(u.name, tok, Min((int)sizeof(u.name), len));
-
-      // i min max
-      if (TokenEq(type_tok, type_len, "int")) {
-        u.type = SHADER_UNIFORM_TYPE_INT;
-
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.val_i1 = TokenInt(tok, len);
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.min_i = TokenInt(tok, len);
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.max_i = TokenInt(tok, len);
-      }
-      // f
-      else if (TokenEq(type_tok, type_len, "float")) {
-        u.type = SHADER_UNIFORM_TYPE_FLOAT;
-
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.val_fl = TokenFloat(tok, len);
-      }
-      // f f f f
-      else if (TokenEq(type_tok, type_len, "color")) {
-        u.type = SHADER_UNIFORM_TYPE_COLOR;
-
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.val_v4.x = TokenFloat(tok, len);
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.val_v4.y = TokenFloat(tok, len);
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.val_v4.z = TokenFloat(tok, len);
-        if (!ReadToken(&src, &tok, &len)) {
-          SDL_Log("@uniform: No value");
-          continue;
-        }
-        u.val_v4.w = TokenFloat(tok, len);
-      } else {
-        SDL_Log("@uniform: Unsupported type: %.*s", type_len, type_tok);
-        continue;
-      }
-
-      sm->uniforms.push_back(u);
-
-      continue;
-    }
-  }
-}
-
-// --------------------------------------------------------------------------------
 // Application
 // --------------------------------------------------------------------------------
 
+typedef struct Model Model;
+struct Model
+{
+  GLuint vao;
+  GLuint vbo;
+  GLuint ibo;
+  GLuint vs;
+  int    ibo_len;
+  bool   is_3d;
+};
+
 static struct
 {
-  SDL_Window*     wnd;
-  ShaderMetadata  sm;
-  bool            ui_hidden;
-  bool            pause;
+  SDL_Window* wnd;
+  bool        ui_hidden;
+  bool        pause;
 
-  GLuint shader;
+  int   shader_index = 0;
 
   float cam_dist = 3.5f;
   Vec2  cam_ang  = Vec2(0, 0);
 
-  GLuint vao;
-  GLuint vbo;
-  GLuint ibo;
-  int    ibo_len;
+  Model models[_MODEL_COUNT];
 } G = { };
-
-static inline bool Is3D()
-{
-  return G.sm.model == SHADER_MODEL_TYPE_CUBE;
-}
 
 // Helper: Report errors via glGetError() after every OpenGL function call.
 //         macOS does not support glDebugMessageCallback
-static void AssertGL(GLenum error, const char* expr, int line)
+void AssertGL(GLenum error, const char* expr, int line)
 {
   if (error != GL_NO_ERROR) {
     const char* error_string;
@@ -427,32 +236,19 @@ static void AssertGL(GLenum error, const char* expr, int line)
     SDL_Log("[Line #%u] %s caused %s\n", line, expr, error_string);
   }
 }
-#define GL(expr)                                                    \
-  expr;                                                             \
-  for (GLenum _glcode; (_glcode = glGetError()) != GL_NO_ERROR; ) { \
-    AssertGL(_glcode, #expr, __LINE__);                             \
-  }
 
-SDL_AppResult SDLCALL SDL_AppInit(void**, int argc, char* argv[])
+std::vector<Shader*>& GetShaders()
+{
+  static std::vector<Shader*> s_shaders = { };
+  return s_shaders;
+}
+
+SDL_AppResult SDLCALL SDL_AppInit(void**, int, char**)
 {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
-
-  const char* path = (argc > 1) ? argv[1] : NULL;
-  if (!path) {
-    SDL_Log("No shader file supplied");
-    return SDL_APP_FAILURE;
-  }
-
-  char* src = (char*)SDL_LoadFile(path, NULL);
-  if (!src) {
-    SDL_Log("Failed to load %s: %s", path, SDL_GetError());
-    return SDL_APP_FAILURE;
-  }
-
-  ParseShaderMetadata(&G.sm, src);
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -460,11 +256,10 @@ SDL_AppResult SDLCALL SDL_AppInit(void**, int argc, char* argv[])
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
-  char title[64]; snprintf(title, sizeof(title), "shaders: %s", path);
   Uint32 wflags = SDL_WINDOW_OPENGL             |
                   SDL_WINDOW_HIGH_PIXEL_DENSITY |
                   SDL_WINDOW_RESIZABLE;
-  G.wnd = SDL_CreateWindow(title, 1024, 768, wflags);
+  G.wnd = SDL_CreateWindow("shaders", 1024, 768, wflags);
   if (!G.wnd) {
     SDL_Log("Failed to create window: %s", SDL_GetError());
     return SDL_APP_FAILURE;
@@ -481,27 +276,28 @@ SDL_AppResult SDLCALL SDL_AppInit(void**, int argc, char* argv[])
     return SDL_APP_FAILURE;
   }
 
-  GL(glGenVertexArrays(1, &G.vao));
-  GL(glBindVertexArray(G.vao));
+  // Quad mesh
+  //   0            1
+  // +------------+
+  // |            |
+  // |            |
+  // |            |
+  // |            |
+  // | 3          | 2
+  // +------------+
+  //
+  {
+    Model* m = &G.models[MODEL_QUAD];
 
-  GL(glGenBuffers(1, &G.vbo));
-  GL(glBindBuffer(GL_ARRAY_BUFFER, G.vbo));
+    GL(glGenVertexArrays(1, &m->vao));
+    GL(glBindVertexArray(m->vao));
 
-  GL(glGenBuffers(1, &G.ibo));
-  GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, G.ibo));
+    GL(glGenBuffers(1, &m->vbo));
+    GL(glBindBuffer(GL_ARRAY_BUFFER, m->vbo));
 
-  switch (G.sm.model) {
-  case SHADER_MODEL_TYPE_QUAD: {
-    //
-    //   0            1
-    // +------------+
-    // |            |
-    // |            |
-    // |            |
-    // |            |
-    // | 3          | 2
-    // +------------+
-    //
+    GL(glGenBuffers(1, &m->ibo));
+    GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo));
+
     struct V { Vec2 p; Vec2 t; };
     const V vdata[] = {
       { Vec2(-1.0f,  1.0f), Vec2(0, 1) },
@@ -519,21 +315,34 @@ SDL_AppResult SDLCALL SDL_AppInit(void**, int argc, char* argv[])
     GL(glEnableVertexAttribArray(0));
     GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(V), (void*)offsetof(V, t)));
     GL(glEnableVertexAttribArray(1));
-    G.ibo_len = sizeof(idata) / sizeof(*idata);
-  } break;
-  case SHADER_MODEL_TYPE_CUBE: {
-    //
-    //      +------------+
-    //     /|           /|
-    //    / |          / |
-    //   +------------+  |
-    //   |  |         |  |
-    //   |  |         |  |
-    //   |  +---------|--+
-    //   | /          | /
-    //   |/           |/
-    //   +------------+
-    //
+    m->ibo_len = COUNTOF(idata);
+    m->is_3d = false;
+  }
+
+  // Cube mesh
+  //      +------------+
+  //     /|           /|
+  //    / |          / |
+  //   +------------+  |
+  //   |  |         |  |
+  //   |  |         |  |
+  //   |  +---------|--+
+  //   | /          | /
+  //   |/           |/
+  //   +------------+
+  //
+  {
+    Model* m = &G.models[MODEL_CUBE];
+
+    GL(glGenVertexArrays(1, &m->vao));
+    GL(glBindVertexArray(m->vao));
+
+    GL(glGenBuffers(1, &m->vbo));
+    GL(glBindBuffer(GL_ARRAY_BUFFER, m->vbo));
+
+    GL(glGenBuffers(1, &m->ibo));
+    GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo));
+
     struct V { Vec3 p; Vec2 t; Vec3 n; };
     const V vdata[] = {
       // Front
@@ -589,46 +398,40 @@ SDL_AppResult SDLCALL SDL_AppInit(void**, int argc, char* argv[])
     GL(glEnableVertexAttribArray(1));
     GL(glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)offsetof(V, n)));
     GL(glEnableVertexAttribArray(2));
-    G.ibo_len = sizeof(idata) / sizeof(*idata);
-  } break;
-  default: return SDL_APP_FAILURE;
+    m->ibo_len = COUNTOF(idata);
+    m->is_3d = true;
   }
 
-  const char* vs_table[] = {
-    NULL,
+  const char* vshaders[] = {
     "vert_quad.glsl",
-    "vert_cube.glsl",
+    "vert_cube.glsl"
   };
-  char* vs_src = (char*)SDL_LoadFile(vs_table[G.sm.model], NULL);
-  if (!vs_src) {
-    SDL_Log("Failed to load vertex shader %s: %s", vs_table[G.sm.model], SDL_GetError());
-    return SDL_APP_FAILURE;
-  }
-  char* fs_src = src;
+  static_assert(COUNTOF(vshaders) == _MODEL_COUNT);
+  for (size_t i = 0; i < COUNTOF(vshaders); ++i) {
+    char* vs_src = (char*)SDL_LoadFile(vshaders[i], NULL);
+    if (!vs_src) {
+      SDL_Log("Failed to load vertex shader %s: %s", vshaders[i], SDL_GetError());
+      return SDL_APP_FAILURE;
+    }
 
-  struct {
-    GLenum      type;
-    const char* src;
-  } shaders[] = {
-    { .type = GL_VERTEX_SHADER,   .src = vs_src },
-    { .type = GL_FRAGMENT_SHADER, .src = fs_src },
-  };
-  G.shader = GL(glCreateProgram());
-  for (size_t i = 0; i < sizeof(shaders) / sizeof(*shaders); ++i) {
-    GLuint shader = GL(glCreateShader(shaders[i].type));
-    GL(glShaderSource(shader, 1, &shaders[i].src, NULL));
+    GLuint shader = GL(glCreateShader(GL_VERTEX_SHADER));
+    GL(glShaderSource(shader, 1, &vs_src, NULL));
     GL(glCompileShader(shader));
+
     GLint compile_status = 0;
     GL(glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status));
     if (compile_status != GL_TRUE) {
       char error[1024] = { 0 };
       GL(glGetShaderInfoLog(shader, sizeof(error), NULL, error));
-      SDL_Log("Error compiling shader %s", error);
+      SDL_Log("Error compiling shader %s: %s", vshaders[i], error);
       return SDL_APP_FAILURE;
     }
-    GL(glAttachShader(G.shader, shader));
+
+    G.models[i].vs = shader;
+    SDL_Log("Compiled vertex shader %s", vshaders[i]);
+
+    SDL_free(vs_src);
   }
-  GL(glLinkProgram(G.shader));
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -654,20 +457,67 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
   GL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
   GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-  GL(glUseProgram(G.shader));
-  GL(glBindVertexArray(G.vao));
+  Shader* shader = GetShaders()[G.shader_index];
+  Model* model = &G.models[shader->model];
+
+  if (!shader->ready) {
+    shader->program = GL(glCreateProgram());
+
+    char* fs_src = (char*)SDL_LoadFile(shader->path, NULL);
+    if (!fs_src) {
+      SDL_Log("Failed to load fragment shader %s: %s", shader->path, SDL_GetError());
+      return SDL_APP_FAILURE;
+    }
+
+    GLuint fs = GL(glCreateShader(GL_FRAGMENT_SHADER));
+    GL(glShaderSource(fs, 1, &fs_src, NULL));
+    GL(glCompileShader(fs));
+
+    GLint compile_status = 0;
+    GL(glGetShaderiv(fs, GL_COMPILE_STATUS, &compile_status));
+    if (compile_status != GL_TRUE) {
+      char error[1024] = { 0 };
+      GL(glGetShaderInfoLog(fs, sizeof(error), NULL, error));
+      SDL_Log("Error compiling shader %s: %s", shader->path, error);
+      return SDL_APP_FAILURE;
+    }
+
+    SDL_Log("Compiled fragment shader %s", shader->path);
+
+    SDL_free(fs_src);
+
+    GL(glAttachShader(shader->program, model->vs));
+    GL(glAttachShader(shader->program, fs));
+    GL(glLinkProgram(shader->program));
+
+    GLint link_status = 0;
+    GL(glGetProgramiv(shader->program, GL_LINK_STATUS, &link_status));
+    if (link_status != GL_TRUE) {
+      char error[1024] = { 0 };
+      GL(glGetProgramInfoLog(shader->program, sizeof(error), NULL, error));
+      SDL_Log("Error linking program %s: %s", shader->path, error);
+      return SDL_APP_FAILURE;
+    }
+
+    SDL_Log("Linked program");
+
+    shader->ready = true;
+  }
+
+  GL(glBindVertexArray(model->vao));
+  GL(glUseProgram(shader->program));
 
   GLint u_id = -1;
-  if ((u_id = glGetUniformLocation(G.shader, "u_res")) != -1) {
+  if ((u_id = glGetUniformLocation(shader->program, "u_res")) != -1) {
     GL(glUniform2f(u_id, (float)wnd_x, (float)wnd_y));
   }
-  if ((u_id = glGetUniformLocation(G.shader, "u_time")) != -1) {
+  if ((u_id = glGetUniformLocation(shader->program, "u_time")) != -1) {
     if (!G.pause) {
       GL(glUniform1f(u_id, SDL_GetTicks() / 1e3f));
     }
   }
 
-  if (Is3D()) {
+  if (model->is_3d) {
     const Vec3  cam = Vec3::FromEuler(G.cam_ang) * G.cam_dist;
     const Vec3  tgt = Vec3(0, 0, 0);
     const float fov = 75.0f;
@@ -676,36 +526,22 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
     Mat4x4 m_proj = Mat4x4::Perspective(fov, (float)wnd_x / (float)wnd_y, 0.1f, 100.0f);
     Mat4x4 m_view = m_proj * m_look;
 
-    if ((u_id = glGetUniformLocation(G.shader, "u_vmat")) == -1) {
+    if ((u_id = glGetUniformLocation(shader->program, "u_vmat")) == -1) {
       SDL_Log("Warning: u_vmat uniform not found");
     } else {
       GL(glUniformMatrix4fv(u_id, 1, GL_FALSE, m_view.Base()));
     }
 
-    if ((u_id = glGetUniformLocation(G.shader, "u_cam")) != -1) {
+    if ((u_id = glGetUniformLocation(shader->program, "u_cam")) != -1) {
       GL(glUniform3f(u_id, cam.x, cam.y, cam.z));
     }
   }
 
-  for (auto& u : G.sm.uniforms) {
-    if ((u_id = glGetUniformLocation(G.shader, u.name)) == -1) {
-      SDL_Log("Warning: Couldn't find a uniform with the name %s", u.name);
-      continue;
-    }
-    switch (u.type) {
-    case SHADER_UNIFORM_TYPE_INT: {
-      GL(glUniform1i(u_id, u.val_i1));
-    } break;
-    case SHADER_UNIFORM_TYPE_FLOAT: {
-      GL(glUniform1f(u_id, u.val_fl));
-    } break;
-    case SHADER_UNIFORM_TYPE_COLOR: {
-      GL(glUniform4f(u_id, u.val_v4.x, u.val_v4.y, u.val_v4.z, u.val_v4.w));
-    } break;
-    }
+  if (shader->uf_fn) {
+    shader->uf_fn(shader);
   }
 
-  GL(glDrawElements(GL_TRIANGLES, G.ibo_len, GL_UNSIGNED_SHORT, NULL));
+  GL(glDrawElements(GL_TRIANGLES, model->ibo_len, GL_UNSIGNED_SHORT, NULL));
 
   ImGui_ImplSDL3_NewFrame();
   ImGui_ImplOpenGL3_NewFrame();
@@ -720,25 +556,22 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
       ImGuiWindowFlags_NoTitleBar |
       ImGuiWindowFlags_NoMove     |
       ImGuiWindowFlags_NoResize;
-    if (ImGui::Begin("Test", NULL, flags)) {
+    if (ImGui::Begin("ControlsWindow", NULL, flags)) {
+      if (ImGui::BeginCombo("Shader", GetShaders()[G.shader_index]->path)) {
+        for (int i = 0; i < (int)GetShaders().size(); ++i) {
+          if (ImGui::Selectable(GetShaders()[i]->path, i == G.shader_index)) {
+            G.shader_index = i;
+          }
+        }
+        ImGui::EndCombo();
+      }
       ImGui::SeparatorText("Controls");
       ImGui::Text("Tab: Toggle UI");
       ImGui::Checkbox("Pause time", &G.pause);
-      if (G.sm.uniforms.size() > 0) {
+
+      if (shader->ui_fn) {
         ImGui::SeparatorText("Uniforms");
-        for (auto& u : G.sm.uniforms) {
-          switch (u.type) {
-          case SHADER_UNIFORM_TYPE_INT: {
-            ImGui::SliderInt(u.name, &u.val_i1, u.min_i, u.max_i);
-          } break;
-          case SHADER_UNIFORM_TYPE_FLOAT: {
-            ImGui::DragFloat(u.name, &u.val_fl, 0.01f);
-          } break;
-          case SHADER_UNIFORM_TYPE_COLOR: {
-            ImGui::ColorEdit4(u.name, &u.val_v4.x);
-          } break;
-          }
-        }
+        shader->ui_fn();
       }
     }
     ImGui::End();
@@ -757,6 +590,8 @@ SDL_AppResult SDLCALL SDL_AppIterate(void*)
 
 SDL_AppResult SDLCALL SDL_AppEvent(void*, SDL_Event* event)
 {
+  bool is_3d = G.models[GetShaders()[G.shader_index]->model].is_3d;
+
   ImGui_ImplSDL3_ProcessEvent(event);
   switch (event->type) {
   case SDL_EVENT_KEY_DOWN: {
@@ -765,7 +600,7 @@ SDL_AppResult SDLCALL SDL_AppEvent(void*, SDL_Event* event)
     }
   } break;
   case SDL_EVENT_MOUSE_MOTION: {
-    if (Is3D() && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
+    if (is_3d && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
       const float sens = 0.4f;
       G.cam_ang.x -= event->motion.xrel * sens;
       G.cam_ang.y += event->motion.yrel * sens;
@@ -773,7 +608,7 @@ SDL_AppResult SDLCALL SDL_AppEvent(void*, SDL_Event* event)
     }
   } break;
   case SDL_EVENT_MOUSE_WHEEL: {
-    if (Is3D()) {
+    if (is_3d) {
       G.cam_dist -= event->wheel.y * 0.1f;
       G.cam_dist = Max(G.cam_dist, 1.0f);
     }

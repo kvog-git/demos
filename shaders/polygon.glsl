@@ -6,11 +6,6 @@
 // ref: https://thndl.com/square-shaped-shaders.html
 // ref: https://thebookofshaders.com/07/
 //
-// @model quad
-// @uniform int   u_n  3 3 12
-// @uniform color u_bg 0 0 0 1
-// @uniform color u_fg 1 1 1 1
-//
 // SPDX-License-Identifier: 0BSD
 // --------------------------------------------------------------------------------
 

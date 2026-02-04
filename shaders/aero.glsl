@@ -3,13 +3,6 @@
 // --------------------------------------------------------------------------------
 // Windows 7-style "aero" effect
 //
-// @model quad
-// @uniform int u_checker 16 4 64
-// @uniform color u_checker_c1 0.9 0.9 0.9 1
-// @uniform color u_checker_c2 1.0 1.0 1.0 1
-// @uniform float u_ww 500
-// @uniform float u_wh 400
-//
 // SPDX-License-Identifier: 0BSD
 // --------------------------------------------------------------------------------
 

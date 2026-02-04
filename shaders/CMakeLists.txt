@@ -5,5 +5,11 @@ set(DEMO_NEEDS_DEAR_IMGUI TRUE)
 set(DEMO_NEEDS_SDL3       TRUE)
 include("${CMAKE_CURRENT_LIST_DIR}/../common/c_cpp/CMakeLists.txt")
 
-add_executable(shaders main.cc)
+add_executable(shaders
+  shaders.cc
+
+  aero.cc
+  polygon.cc
+  vfog.cc
+)
 target_link_libraries(shaders PRIVATE common)

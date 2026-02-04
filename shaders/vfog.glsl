@@ -3,11 +3,6 @@
 // --------------------------------------------------------------------------------
 // Volumetric fog
 //
-// @model cube
-// @uniform int u_mode  0 0 2
-// @uniform int u_steps 8 1 64
-// @uniform float u_sigma 4.0f
-//
 // SPDX-License-Identifier: 0BSD
 // --------------------------------------------------------------------------------
 
