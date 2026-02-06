@@ -598,6 +598,9 @@ SDL_AppResult SDLCALL SDL_AppEvent(void*, SDL_Event* event)
     if (event->key.key == SDLK_TAB) {
       G.ui_hidden = !G.ui_hidden;
     }
+    if (event->key.key == SDLK_SPACE) {
+      G.pause = !G.pause;
+    }
   } break;
   case SDL_EVENT_MOUSE_MOTION: {
     if (is_3d && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
