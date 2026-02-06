@@ -10,6 +10,7 @@ add_executable(shaders
 
   aero.cc
   polygon.cc
+  subpixel.cc
   vfog.cc
 )
 target_link_libraries(shaders PRIVATE common)

@@ -7,6 +7,7 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <cstring>
 #include <vector>
 
 #include <SDL3/SDL.h>
