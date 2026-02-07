@@ -2,56 +2,77 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
+#include <stdio.h>
 
-static void write_str(int fd, const char* str)
-{
-    write(fd, str, __builtin_strlen(str));
-}
+// ref: https://git.suckless.org/sinit/file/sinit.c.html
 
-static void error(const char* message)
+static void panic(const char* message)
 {
     // Attempt to spew to kernel log
     int kmfd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
+    int fd = (kmfd >= 0) ? kmfd : 2;
+
+    struct iovec msgvec[] = {
+#define STRVEC(str) { .iov_base = (void*)(str), .iov_len = __builtin_strlen(str) }
+        STRVEC("rlinit: "),
+        STRVEC(message),
+        STRVEC("\n")
+#undef STRVEC
+    };
+    writev(fd, msgvec, sizeof(msgvec) / sizeof(*msgvec));
+
     if (kmfd >= 0) {
-        write_str(kmfd, message);
         close(kmfd);
     }
 
-    _exit(1); // Kernel panic
+    _exit(1); // Triggers a kernel panic since we're PID 1
 }
-#define ERROR(message) error("[rlinit] " message)
 
-static bool mount_required(const char* src, const char* tgt, const char* fs)
+static bool mkdir_if_missing(const char* path, mode_t mode)
 {
-    // EBUSY means already mounted, which is ok
-    return mount(src, tgt, fs, 0, 0) >= 0 || errno == EBUSY;
+    return mkdir(path, mode) == 0 || errno == EEXIST;
 }
 
 int main(void)
 {
-#if 0
-    // First, spew a message to tty to signal we at least made it this far
-    {
-        const char* hello = "rlinit: Initialization started\n";
-        write(1, hello, __builtin_strlen(hello));
+    if (getpid() != 1) {
+        panic("PID is not 1. Aborting.");
     }
-#endif
 
-    // Mount /dev first, as /dev/kmsg is useful for debugging errors
+    // Set up filesystem in descending priority
+    //
     // @@ include errno in error messages
-    if (!mount_required("devtmpfs", "/dev", "devtmpfs")) {
-        ERROR("Failed to mount /dev\n");
+
+    if (!mkdir_if_missing("/dev", 0755)) {
+        panic("Failed to create /dev");
     }
-    if (!mount_required("proc", "/proc", "proc")) {
-        ERROR("Failed to mount /proc\n");
-    }
-    if (!mount_required("sysfs", "/sys", "sysfs")) {
-        ERROR("Failed to mount /sys\n");
+    if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID, 0) < 0) {
+        panic("Failed to mount /dev");
     }
 
-    // Write to kernel log
+    if (!mkdir_if_missing("/proc", 0555)) {
+        panic("Failed to create /proc");
+    }
+    if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, 0) < 0) {
+        panic("Failed to mount /proc");
+    }
+
+    if (!mkdir_if_missing("/sys", 0555)) {
+        panic("Failed to create /sys");
+    }
+    if (mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, 0) < 0) {
+        panic("Failed to mount /sys");
+    }
+
+    if (!mkdir_if_missing("/tmp", 0777)) {
+        panic("Failed to create /tmp");
+    }
+    chmod("/tmp", 01777);
+
+    // Test write to kernel log
     {
         int kmfd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
         if (kmfd >= 0) {
@@ -61,16 +82,19 @@ int main(void)
         }
     }
 
-    // pid_t pid = fork();
-    // if (pid == 0) {
-    //     char *argv[] = { (char*)"/rlwsd", 0 };
-    //     execv(argv[0], argv);
-    //     _exit(127);
-    // }
+    pid_t child = fork();
+    switch(child) {
+    case 0: {
+        char* const argv[] = { "/rlwsd", 0 };
+        execv(argv[0], argv);
+        panic("execvp failed");
+    } break;
+    case -1: {
+        panic("Failed to fork()");
+    } break;
+    }
 
-    // int st = 0;
-    // waitpid(pid, &st, 0);
-    // write(1, "rlinit: rlwsd exited\n", 21);
+    // @@ reap child processes
 
     for (;;) pause();
 }

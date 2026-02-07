@@ -7,7 +7,7 @@ BUILD_DIR="$ROOT/build"
 ROOTFS_DIR="$ROOT/rootfs"
 
 mkdir -p "$BUILD_DIR"
-mkdir -p "$ROOTFS_DIR/proc" "$ROOTFS_DIR/sys" "$ROOTFS_DIR/dev"
+mkdir -p "$ROOTFS_DIR"
 
 echo "Compiling rlinit"
 musl-gcc -static -O2 -s rlinit/rlinit.c -o "$BUILD_DIR/init"
@@ -23,4 +23,10 @@ echo "Building initramfs"
 (cd "$ROOTFS_DIR" && find . -print0 | cpio --null -ov --format=newc) > "$BUILD_DIR/initramfs.cpio"
 
 echo "Running QEMU (do CTRL+A then X to quit)"
-qemu-system-x86_64 -kernel linux/arch/x86/boot/bzImage -initrd "$BUILD_DIR/initramfs.cpio" -append "console=ttyS0" -nographic
+qemu-system-x86_64 \
+	-kernel linux/arch/x86/boot/bzImage \
+	-initrd "$BUILD_DIR/initramfs.cpio" \
+	-append "console=ttyS0 video=vesafb:1024x768-32" \
+	-serial mon:stdio \
+  	-vga std \
+  	-display sdl
