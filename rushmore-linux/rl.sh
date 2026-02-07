@@ -23,5 +23,4 @@ echo "Building initramfs"
 (cd "$ROOTFS_DIR" && find . -print0 | cpio --null -ov --format=newc) > "$BUILD_DIR/initramfs.cpio"
 
 echo "Running QEMU (do CTRL+A then X to quit)"
-sleep 1
 qemu-system-x86_64 -kernel linux/arch/x86/boot/bzImage -initrd "$BUILD_DIR/initramfs.cpio" -append "console=ttyS0" -nographic
