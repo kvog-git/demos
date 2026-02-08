@@ -23,10 +23,11 @@ echo "Building initramfs"
 (cd "$ROOTFS_DIR" && find . -print0 | cpio --null -ov --format=newc) > "$BUILD_DIR/initramfs.cpio"
 
 echo "Running QEMU (do CTRL+A then X to quit)"
+
+# set vga=ask to select VGA modes
 qemu-system-x86_64 \
 	-kernel linux/arch/x86/boot/bzImage \
 	-initrd "$BUILD_DIR/initramfs.cpio" \
-	-append "console=ttyS0 video=vesafb:1024x768-32" \
-	-serial mon:stdio \
-  	-vga std \
-  	-display sdl
+	-append "console=tty0 console=ttyS0,115200 vga=792" \
+	-vga std \
+	-display gtk
