@@ -13,7 +13,7 @@ echo "Compiling rlinit"
 musl-gcc -static -O2 -s rlinit/rlinit.c -o "$BUILD_DIR/init"
 
 echo "Compiling rlwsd"
-musl-gcc -static -O2 -s rlwsd/rlwsd.c -o "$BUILD_DIR/rlwsd"
+musl-gcc -static -O2 -I./sysroot/include -s rlwsd/rlwsd.c -o "$BUILD_DIR/rlwsd"
 
 echo "Building rootfs"
 cp "$BUILD_DIR/init" "$ROOTFS_DIR/init"
@@ -30,4 +30,5 @@ qemu-system-x86_64 \
 	-initrd "$BUILD_DIR/initramfs.cpio" \
 	-append "console=tty0 console=ttyS0,115200 vga=792" \
 	-vga std \
-	-display gtk
+	-display gtk \
+	-serial mon:stdio

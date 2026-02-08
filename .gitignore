@@ -11,3 +11,4 @@ d3d11-re.*
 rushmore-linux/build
 rushmore-linux/linux*
 rushmore-linux/rootfs
+rushmore-linux/sysroot
