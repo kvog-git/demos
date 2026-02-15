@@ -364,7 +364,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 // --------------------------------------------------------------------------------
 #if ACTIVE_METHOD == 2
 
-static LRESULT WINAPI Method1_WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+static LRESULT WINAPI Method2_WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     SPEW_WNDPROC();
     switch (msg) {
@@ -388,7 +388,7 @@ static LRESULT WINAPI Method1_WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM
 
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
-    CreateDemoWindow(CS_CLASSDC | CS_HREDRAW | CS_VREDRAW, Method1_WndProc);
+    CreateDemoWindow(CS_CLASSDC | CS_HREDRAW | CS_VREDRAW, Method2_WndProc);
     SetupD3D11();
     CreateRenderTarget();
     ShowWindow(G.hwnd, SW_SHOW);
@@ -413,7 +413,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 // --------------------------------------------------------------------------------
 #if ACTIVE_METHOD == 3
 
-static LRESULT WINAPI Method1_WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+static LRESULT WINAPI Method3_WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     SPEW_WNDPROC();
     switch (msg) {
@@ -445,7 +445,7 @@ static LRESULT WINAPI Method1_WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM
 
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
-    CreateDemoWindow(CS_CLASSDC, Method1_WndProc);
+    CreateDemoWindow(CS_CLASSDC, Method3_WndProc);
     SetupD3D11();
     CreateRenderTarget();
     ShowWindow(G.hwnd, SW_SHOW);
