@@ -44,6 +44,21 @@ static void panic(const char* message)
     _exit(1); // Triggers a kernel panic since we're PID 1
 }
 
+static inline uint32_t pack_rgb(const struct fb_var_screeninfo* v, uint8_t r, uint8_t g, uint8_t b)
+{
+    uint32_t rv = (v->red.length   ? ((uint32_t)r * ((1u << v->red.length)   - 1) + 127) / 255 : 0);
+    uint32_t gv = (v->green.length ? ((uint32_t)g * ((1u << v->green.length) - 1) + 127) / 255 : 0);
+    uint32_t bv = (v->blue.length  ? ((uint32_t)b * ((1u << v->blue.length)  - 1) + 127) / 255 : 0);
+    return (rv << v->red.offset) | (gv << v->green.offset) | (bv << v->blue.offset);
+}
+
+static inline void write_pixel(uint8_t* p, uint32_t bpp, uint32_t pix)
+{
+    uint32_t bytes = bpp / 8;
+    for (uint32_t i = 0; i < bytes; i++)
+        p[i] = (uint8_t)(pix >> (8u * i)); // little-endian write
+}
+
 int main(void)
 {
     int fd = open("/dev/fb0", O_RDWR | O_CLOEXEC);
@@ -68,8 +83,8 @@ int main(void)
         vinfo.green.offset, vinfo.green.length,
         vinfo.blue.offset, vinfo.blue.length));
 
-    if (vinfo.bits_per_pixel != 24) {
-        panic("BPP must be 24");
+    if (!(vinfo.bits_per_pixel == 24 || vinfo.bits_per_pixel == 32)) {
+        panic("Unsupported BPP");
     }
 
     // Disable TTY
@@ -110,11 +125,12 @@ int main(void)
         if ((now - then) >= (1.0f / 60.0f)) {
             then = now;
 
-            uint32_t color = (uint32_t)lum << 24 | (uint32_t)lum << 16 | (uint32_t)lum << 8 | lum;
+            uint32_t pix = pack_rgb(&vinfo, lum, lum, lum);
             uint8_t* row = fb + (size_t)y * finfo.line_length;
             for (size_t x = 0; x < vinfo.xres; ++x) {
-                size_t bpp = vinfo.bits_per_pixel / 8;
-                memcpy(&row[(x * bpp) + x], &color, 4);
+                size_t bpp = vinfo.bits_per_pixel;
+                size_t bypp = bpp / 8;
+                write_pixel(&row[(size_t)x * bypp], bpp, pix);
             }
 
             lum = (lum + 7) % 255;

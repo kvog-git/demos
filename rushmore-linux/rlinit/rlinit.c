@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 // ref: https://git.suckless.org/sinit/file/sinit.c.html
@@ -85,7 +86,7 @@ int main(void)
     pid_t child = fork();
     switch(child) {
     case 0: {
-        char* const argv[] = { "/rlwsd", 0 };
+        char* const argv[] = { "/rlws", 0 };
         execv(argv[0], argv);
         panic("execvp failed");
     } break;
