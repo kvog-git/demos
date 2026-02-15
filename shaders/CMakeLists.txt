@@ -8,8 +8,6 @@ include("${CMAKE_CURRENT_LIST_DIR}/../common/c_cpp/CMakeLists.txt")
 add_executable(shaders
   shaders.cc
 
-  aero.cc
-  polygon.cc
   subpixel.cc
   vfog.cc
 )
