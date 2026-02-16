@@ -55,8 +55,9 @@ static inline uint32_t pack_rgb(const struct fb_var_screeninfo* v, uint8_t r, ui
 static inline void write_pixel(uint8_t* p, uint32_t bpp, uint32_t pix)
 {
     uint32_t bytes = bpp / 8;
-    for (uint32_t i = 0; i < bytes; i++)
-        p[i] = (uint8_t)(pix >> (8u * i)); // little-endian write
+    for (uint32_t i = 0; i < bytes; i++) {
+        p[i] = (uint8_t)(pix >> (8u * i));
+    }
 }
 
 int main(void)
@@ -106,35 +107,19 @@ int main(void)
         panic(tmp_fmt("mmap failed: %s", strerror(errno)));
     }
 
-#if 1
     for (uint32_t y = 0; y < vinfo.yres; ++y) {
         uint8_t* row = fb + (size_t)y * finfo.line_length;
-        memset(row, 0x00, finfo.line_length);
-    }
-#endif
-
-    uint8_t lum = 0;
-    uint32_t y = 0;
-    float then = 0.0f;
-
-    for (;;)
-    {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        float now = ts.tv_sec + (ts.tv_nsec / 1e9f);
-        if ((now - then) >= (1.0f / 60.0f)) {
-            then = now;
-
-            uint32_t pix = pack_rgb(&vinfo, lum, lum, lum);
-            uint8_t* row = fb + (size_t)y * finfo.line_length;
-            for (size_t x = 0; x < vinfo.xres; ++x) {
-                size_t bpp = vinfo.bits_per_pixel;
-                size_t bypp = bpp / 8;
-                write_pixel(&row[(size_t)x * bypp], bpp, pix);
-            }
-
-            lum = (lum + 7) % 255;
-            y = (y + 1) % (vinfo.yres - 1);
+        for (size_t x = 0; x < vinfo.xres; ++x) {
+            uint8_t r = 0xFF * x / vinfo.xres;
+            uint8_t g = 0xFF * y / vinfo.yres;
+            uint32_t color = pack_rgb(&vinfo, r, g, 0x00);
+            size_t bpp = vinfo.bits_per_pixel;
+            size_t bypp = bpp / 8;
+            write_pixel(&row[(size_t)x * bypp], bpp, color);
         }
+    }
+
+    while (true) {
+        pause();
     }
 }
