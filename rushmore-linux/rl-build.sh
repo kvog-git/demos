@@ -10,8 +10,8 @@ CFLAGS="-static -O2 -s --sysroot $OUT/sysroot -nostdinc -isystem $OUT/sysroot/us
 echo "rlinit"
 musl-gcc $CFLAGS rlinit/rlinit.c -o "$OUT/rlinit"
 
-echo "rlws"
-musl-gcc $CFLAGS rlws/rlws.c -o "$OUT/rlws"
+echo "rltest"
+musl-gcc $CFLAGS rltest/rltest.c -o "$OUT/rltest"
 
 echo "Creating rootfs..."
 ROOTFS="$DIR/out/rootfs"
@@ -19,7 +19,7 @@ mkdir -p "$ROOTFS/dev"
 mkdir -p "$ROOTFS/proc"
 mkdir -p "$ROOTFS/sys"
 cp "$OUT/rlinit" "$ROOTFS/init"
-cp "$OUT/rlws" "$ROOTFS/rlws"
+cp "$OUT/rltest" "$ROOTFS/rltest"
 
 echo "Creating initranfs..."
 (

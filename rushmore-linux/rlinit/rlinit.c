@@ -86,7 +86,7 @@ int main(void)
     pid_t child = fork();
     switch(child) {
     case 0: {
-        char* const argv[] = { "/rlws", 0 };
+        char* const argv[] = { "/rltest", 0 };
         execv(argv[0], argv);
         panic("execvp failed");
     } break;
