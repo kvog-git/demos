@@ -3,13 +3,9 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-
-
-arch="$(uname -m)"
-
 case "$(uname -m)" in
     x86_64)
-        # set vga=ask to select VGA modes
+        # set vga=ask to list VGA modes
         qemu-system-x86_64 \
             -kernel "$DIR/out/kernel/arch/x86_64/boot/bzImage" \
             -initrd "$DIR/out/initramfs.cpio.gz" \

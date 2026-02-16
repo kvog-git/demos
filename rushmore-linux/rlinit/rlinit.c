@@ -6,7 +6,6 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 // ref: https://git.suckless.org/sinit/file/sinit.c.html
 
