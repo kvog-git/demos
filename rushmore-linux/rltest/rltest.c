@@ -107,19 +107,18 @@ int main(void)
         panic(tmp_fmt("mmap failed: %s", strerror(errno)));
     }
 
-    for (uint32_t y = 0; y < vinfo.yres; ++y) {
-        uint8_t* row = fb + (size_t)y * finfo.line_length;
-        for (size_t x = 0; x < vinfo.xres; ++x) {
-            uint8_t r = 0xFF * x / vinfo.xres;
-            uint8_t g = 0xFF * y / vinfo.yres;
-            uint32_t color = pack_rgb(&vinfo, r, g, 0x00);
-            size_t bpp = vinfo.bits_per_pixel;
-            size_t bypp = bpp / 8;
-            write_pixel(&row[(size_t)x * bypp], bpp, color);
-        }
-    }
-
     while (1) {
-        pause();
+        for (uint32_t y = 0; y < vinfo.yres; ++y) {
+            uint8_t* row = fb + (size_t)y * finfo.line_length;
+            for (size_t x = 0; x < vinfo.xres; ++x) {
+                uint8_t r = 0xFF * x / vinfo.xres;
+                uint8_t g = 0xFF * y / vinfo.yres;
+                uint32_t color = pack_rgb(&vinfo, r, g, 0x00);
+                size_t bpp = vinfo.bits_per_pixel;
+                size_t bypp = bpp / 8;
+                write_pixel(&row[(size_t)x * bypp], bpp, color);
+            }
+        }
+        usleep(1000 * 1000 * 1);
     }
 }

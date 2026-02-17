@@ -14,7 +14,7 @@ case "$(uname -m)" in
             -display gtk \
             -serial mon:stdio
         ;;
-    aarch64)
+    arm64)
         qemu-system-aarch64 -machine virt -cpu cortex-a72 \
             -kernel "$DIR/out/kernel/arch/arm64/boot/Image" \
             -initrd "$DIR/out/initramfs.cpio.gz" \
