@@ -169,7 +169,7 @@ static uint32_t ReadRbspBitsEG(void)
 
 static void SpewNalParam(const char* name, uint32_t val)
 {
-    printf("  %-20s %d\n", name, val);
+    printf("  %-30s %d\n", name, val);
 }
 #define SPEW_NAL_PARAM(x) SpewNalParam(#x, x)
 
@@ -190,7 +190,7 @@ int main(int argc, const char* argv[])
         fclose(f);
     }
 
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 3; ++i)
     {
         if (!FindNalUnit())
         {
@@ -211,6 +211,23 @@ int main(int argc, const char* argv[])
         // ref: Table 7-1
         switch (nal_type)
         {
+        case 5:
+        {
+            // ref: §7.3.2.8
+            printf("NAL UNIT(IDR slice)\n");
+            // Slice header (ref: §7.3.3)
+            const uint32_t first_mb_in_slice = ReadRbspBitsEG();
+            const uint32_t slice_type = ReadRbspBitsEG();
+            const uint32_t pic_parameter_set_id = ReadRbspBitsEG();
+            // colour_plane_id not present (?)
+            const uint32_t frame_num = ReadRbspBits(2);
+            SPEW_NAL_PARAM(first_mb_in_slice);
+            SPEW_NAL_PARAM(slice_type);
+            SPEW_NAL_PARAM(pic_parameter_set_id);
+            SPEW_NAL_PARAM(frame_num);
+
+            break;
+        }
         case 7:
         {
             // ref: §7.3.2.1
@@ -219,9 +236,14 @@ int main(int argc, const char* argv[])
             SkipRbspBits(8); // constraint_setX_flag
             const uint32_t level_idc = ReadRbspBits(8);
             const uint32_t seq_parameter_set_id = ReadRbspBitsEG();
+            const uint32_t log2_max_frame_num_minus4 = ReadRbspBitsEG();
+            const uint32_t pic_order_cnt_type = ReadRbspBitsEG();
             SPEW_NAL_PARAM(profile_idc);
             SPEW_NAL_PARAM(level_idc);
             SPEW_NAL_PARAM(seq_parameter_set_id);
+            SPEW_NAL_PARAM(log2_max_frame_num_minus4);
+            SPEW_NAL_PARAM(pic_order_cnt_type);
+            ASSERT(profile_idc == 66);
             break;
         }
         case 8:
