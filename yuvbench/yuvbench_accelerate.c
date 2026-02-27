@@ -6,6 +6,7 @@ typedef struct AccelerateCtx AccelerateCtx;
 struct AccelerateCtx
 {
     void* rgba_buf;
+    vImage_YpCbCrToARGB conv;
 };
 
 static bool yuvbench_accelerate_init(Ctx* ctx)
@@ -13,24 +14,6 @@ static bool yuvbench_accelerate_init(Ctx* ctx)
     AccelerateCtx* accel = calloc(1, sizeof(AccelerateCtx));
     accel->rgba_buf = calloc(4, ctx->inp_w * ctx->inp_h);
     ctx->user = accel;
-    return true;
-}
-
-static void yuvbench_accelerate_deinit(Ctx* ctx)
-{
-    AccelerateCtx* accel = (AccelerateCtx*)ctx->user;
-    free(accel->rgba_buf);
-    free(accel);
-}
-
-static bool yuvbench_accelerate_convert(Ctx* ctx)
-{
-    AccelerateCtx* accel = (AccelerateCtx*)ctx->user;
-    const uint32_t w = ctx->inp_w;
-    const uint32_t h = ctx->inp_h;
-    const uint8_t* Y  = (const uint8_t*)ctx->inp_buf;
-    const uint8_t* Cb = Y + (w * h);
-    const uint8_t* Cr = Cb + (w / 2 * h / 2);
     // BT.709
     vImage_YpCbCrToARGBMatrix matrix = { 0 };
     matrix.Yp = 1.0f;
@@ -49,11 +32,27 @@ static bool yuvbench_accelerate_convert(Ctx* ctx)
     pr.CbCrMax = 240;
     pr.CbCrMin = 16;
     //
-    vImage_YpCbCrToARGB out = { 0 };
-    //
-    if (vImageConvert_YpCbCrToARGB_GenerateConversion(&matrix, &pr, &out, kvImage420Yp8_Cb8_Cr8, kvImageARGB8888, kvImageNoFlags) != kvImageNoError) {
+    if (vImageConvert_YpCbCrToARGB_GenerateConversion(&matrix, &pr, &accel->conv, kvImage420Yp8_Cb8_Cr8, kvImageARGB8888, kvImageNoFlags) != kvImageNoError) {
         return false;
     }
+    return true;
+}
+
+static void yuvbench_accelerate_deinit(Ctx* ctx)
+{
+    AccelerateCtx* accel = (AccelerateCtx*)ctx->user;
+    free(accel->rgba_buf);
+    free(accel);
+}
+
+static bool yuvbench_accelerate_convert(Ctx* ctx)
+{
+    AccelerateCtx* accel = (AccelerateCtx*)ctx->user;
+    const uint32_t w = ctx->inp_w;
+    const uint32_t h = ctx->inp_h;
+    const uint8_t* Y  = (const uint8_t*)ctx->inp_buf;
+    const uint8_t* Cb = Y + (w * h);
+    const uint8_t* Cr = Cb + (w / 2 * h / 2);
     //
     vImage_Buffer ypbuf = { 0 };
     ypbuf.data = (void*)Y;
@@ -78,7 +77,7 @@ static bool yuvbench_accelerate_convert(Ctx* ctx)
     //
     uint8_t permute[4] = { 0, 1, 2, 3 };
     //
-    if (vImageConvert_420Yp8_Cb8_Cr8ToARGB8888(&ypbuf, &cbbuf, &crbuf, &rgbabuf, &out, permute, 0xFF, kvImageNoFlags) != kvImageNoError) {
+    if (vImageConvert_420Yp8_Cb8_Cr8ToARGB8888(&ypbuf, &cbbuf, &crbuf, &rgbabuf, &accel->conv, permute, 0xFF, kvImageNoFlags) != kvImageNoError) {
         return false;
     }
     //
