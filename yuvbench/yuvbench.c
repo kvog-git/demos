@@ -9,6 +9,9 @@ Backend yuvbench_accelerate(void);
 #ifdef YUVBENCH_BAD
 Backend yuvbench_bad(void);
 #endif
+#ifdef YUVBENCH_SWSCALE
+Backend yuvbench_swscale(void);
+#endif
 
 static struct
 {
@@ -18,6 +21,7 @@ static struct
     size_t inp_len;
     void* out_buf;
     size_t out_len;
+    bool show;
 } G = { 0 };
 
 static void run_backend(Backend b)
@@ -79,22 +83,25 @@ static void run_backend(Backend b)
     printf("max result: %fms\n", ts_max * 1000.0f);
     printf("avg result: %fms\n", ts_avg * 1000.0f);
 
-#if 0 && (defined(__APPLE__) || defined(__linux__))
-    // Display last result
-    char cmd[512] = { 0 };
-    snprintf(cmd, sizeof(cmd), "ffplay -f rawvideo -pixel_format rgb24 -video_size %dx%d -", G.inp_w, G.inp_h);
-    FILE* pipe_fp = popen(cmd, "w");
-    if (!pipe_fp) {
-        printf("Failed to open ffplay: %s\n", strerror(errno));
-        abort();
-    }
-    fwrite(G.out_buf, 1, G.out_len, pipe_fp);
-    fflush(pipe_fp);
-    if (pclose(pipe_fp) == -1) {
-        printf("Failed to close ffplay: %s\n", strerror(errno));
-        abort();
-    }
+
+    if (G.show) {
+        // Display last result
+#if 1 && (defined(__APPLE__) || defined(__linux__))
+        char cmd[512] = { 0 };
+        snprintf(cmd, sizeof(cmd), "ffplay -hide_banner -f rawvideo -pixel_format rgb24 -video_size %dx%d -", G.inp_w, G.inp_h);
+        FILE* pipe_fp = popen(cmd, "w");
+        if (!pipe_fp) {
+            printf("Failed to open ffplay: %s\n", strerror(errno));
+            abort();
+        }
+        fwrite(G.out_buf, 1, G.out_len, pipe_fp);
+        fflush(pipe_fp);
+        if (pclose(pipe_fp) == -1) {
+            printf("Failed to close ffplay: %s\n", strerror(errno));
+            abort();
+        }
 #endif
+    }
 }
 
 int main(int argc, char** argv)
@@ -159,6 +166,14 @@ int main(int argc, char** argv)
         fread(G.inp_buf, 1, G.inp_len, f);
         fclose(f);
     }
+
+    // Parse other CLI
+    for (int i = 2; i < argc; ++i) {
+        const char* s = argv[i];
+        if (!strcmp(s, "show")) {
+            G.show = true;
+        }
+    }
     printf("Input image is %dx%d YUV 4:2:0\n", G.inp_w, G.inp_h);
     printf("Input buffer size: %lu\n", G.inp_len);
     // 1x full res luminance plane + 2x half res chroma planes
@@ -176,5 +191,7 @@ int main(int argc, char** argv)
 #ifdef YUVBENCH_BAD
     run_backend(yuvbench_bad());
 #endif
-
+#ifdef YUVBENCH_SWSCALE
+    run_backend(yuvbench_swscale());
+#endif
 }
