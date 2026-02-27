@@ -3,6 +3,9 @@
 #define KBENCH_IMPLEMENTATION
 #include "kbench.h"
 
+#ifdef YUVBENCH_ACCELERATE
+Backend yuvbench_accelerate(void);
+#endif
 #ifdef YUVBENCH_BAD
 Backend yuvbench_bad(void);
 #endif
@@ -44,7 +47,7 @@ static void run_backend(Backend b)
     }
 
     printf("testing...\n");
-    int tests = 200;
+    int tests = 1000;
     double* tests_table = calloc(tests, sizeof(double)); assert(tests_table);
     for (int i = 0; i < tests; ++i) {
         uintptr_t t0 = KBenchTS();
@@ -72,9 +75,9 @@ static void run_backend(Backend b)
         }
         ts_avg += (tests_table[i] / (double)tests);
     }
-    printf("min result: %f\n", ts_min);
-    printf("max result: %f\n", ts_max);
-    printf("avg result: %f\n", ts_avg);
+    printf("min result: %fms\n", ts_min * 1000.0f);
+    printf("max result: %fms\n", ts_max * 1000.0f);
+    printf("avg result: %fms\n", ts_avg * 1000.0f);
 
 #if 0 && (defined(__APPLE__) || defined(__linux__))
     // Display last result
@@ -167,6 +170,9 @@ int main(int argc, char** argv)
     G.out_len = G.inp_w * G.inp_h * 3; // RGB888
     G.out_buf = calloc(1, G.out_len);
 
+#ifdef YUVBENCH_ACCELERATE
+    run_backend(yuvbench_accelerate());
+#endif
 #ifdef YUVBENCH_BAD
     run_backend(yuvbench_bad());
 #endif
