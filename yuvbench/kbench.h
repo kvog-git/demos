@@ -9,12 +9,22 @@ double KBenchElapsedTime(uintptr_t t0, uintptr_t t1);
 
 #ifdef KBENCH_IMPLEMENTATION
 
+#ifdef __linux__
+#include <time.h>
+#endif
+
 uintptr_t KBenchTS(void)
 {
     uintptr_t result = 0;
     // macos+aarch64+clang: use CNTVCT_EL0
 #if defined(__APPLE__) && defined(__clang__) && defined(__aarch64__)
     __asm__ volatile("mrs %0, CNTVCT_EL0" : "=r"(result) :: "memory");
+#endif
+    // linux: use clock_gettime
+#if defined(__linux__)
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    result = (uintptr_t)ts.tv_sec * 1e9 + (uintptr_t)ts.tv_nsec;
 #endif
     return result;
 }
@@ -34,6 +44,10 @@ double KBenchElapsedTime(uintptr_t t0, uintptr_t t1)
     uintptr_t cntfreq_el0 = 0;
     __asm__ volatile("mrs %0, CNTFRQ_EL0" : "=r"(cntfreq_el0) :: "memory");
     val = (double)elapsed / (double)cntfreq_el0;
+#endif
+    // linux: use clock_gettime
+#if defined(__linux__) && defined(__GNUC__) && defined(__amd64__)
+    val = (double)elapsed / 1e9;
 #endif
     return val;
 }

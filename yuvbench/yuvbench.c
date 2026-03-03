@@ -9,6 +9,9 @@ Backend yuvbench_accelerate(void);
 #ifdef YUVBENCH_BAD
 Backend yuvbench_bad(void);
 #endif
+#ifdef YUVBENCH_LIBYUV
+Backend yuvbench_libyuv(void);
+#endif
 #ifdef YUVBENCH_SWSCALE
 Backend yuvbench_swscale(void);
 #endif
@@ -44,14 +47,14 @@ static void run_backend(Backend b)
         return;
     }
 
-    printf("running warnups...\n");
-    int warmup = 20;
+    printf("    running warnups...\n");
+    int warmup = 100;
     for (int i = 0; i < warmup; ++i) {
         b.convert_fn(&ctx);
     }
 
-    printf("testing...\n");
-    int tests = 1000;
+    printf("    testing...\n");
+    int tests = 2500;
     double* tests_table = calloc(tests, sizeof(double)); assert(tests_table);
     for (int i = 0; i < tests; ++i) {
         uintptr_t t0 = KBenchTS();
@@ -79,9 +82,9 @@ static void run_backend(Backend b)
         }
         ts_avg += (tests_table[i] / (double)tests);
     }
-    printf("min result: %fms\n", ts_min * 1000.0f);
-    printf("max result: %fms\n", ts_max * 1000.0f);
-    printf("avg result: %fms\n", ts_avg * 1000.0f);
+    printf("    min result: %fms\n", ts_min * 1000.0f);
+    printf("    max result: %fms\n", ts_max * 1000.0f);
+    printf("    avg result: %fms\n", ts_avg * 1000.0f);
 
 
     if (G.show) {
@@ -186,12 +189,19 @@ int main(int argc, char** argv)
     G.out_buf = calloc(1, G.out_len);
 
 #ifdef YUVBENCH_ACCELERATE
+    printf("YUVBENCH_ACCELERATE\n");
     run_backend(yuvbench_accelerate());
 #endif
 #ifdef YUVBENCH_BAD
+    printf("YUVBENCH_BAD\n");
     run_backend(yuvbench_bad());
 #endif
+#ifdef YUVBENCH_LIBYUV
+    printf("YUVBENCH_LIBYUV\n");
+    run_backend(yuvbench_libyuv());
+#endif
 #ifdef YUVBENCH_SWSCALE
+    printf("YUVBENCH_SWSCALE\n");
     run_backend(yuvbench_swscale());
 #endif
 }
