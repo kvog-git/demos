@@ -2,6 +2,7 @@
 CFLAGS="-Wall -Wextra -Wpedantic -O3 -g -DYUVBENCH_BAD -DYUVBENCH_LIBYUV -DYUVBENCH_SWSCALE"
 LFLAGS="$(pkg-config --libs libswscale) -lyuv"
 mkdir -p build
+set -x
 gcc -o build/yuvbench.o $CFLAGS -c ./yuvbench.c
 gcc -o build/yuvbench_bad.o $CFLAGS -c ./yuvbench_bad.c
 gcc -o build/yuvbench_libyuv.o $CFLAGS -c ./yuvbench_libyuv.c
