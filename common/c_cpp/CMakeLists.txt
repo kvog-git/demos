@@ -107,3 +107,11 @@ if(DEMO_NEEDS_SDL3)
     target_link_libraries(common INTERFACE PkgConfig::sdl3)
   endif()
 endif()
+
+# -----------------------------------------------------------------------------
+# Dependency: Vulkan
+# -----------------------------------------------------------------------------
+if(DEMO_NEEDS_VULKAN)
+  find_package(Vulkan REQUIRED)
+  target_link_libraries(common INTERFACE Vulkan::Vulkan)  
+endif()
