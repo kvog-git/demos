@@ -132,37 +132,28 @@ static inline Mat4 Mat4_Ortho(float l, float r, float t, float b, float n, float
 
 // ref: https://registry.khronos.org/OpenGL/api/GL/glcorearb.h
 
-#define GL_FALSE 0
-#define GL_TRUE  1
-
-#define GL_TRIANGLES 0x0004
-
-#define GL_FRAGMENT_SHADER 0x8B30
-#define GL_VERTEX_SHADER   0x8B31
-
-#define GL_UNSIGNED_SHORT   0x1403
-#define GL_FLOAT            0x1406
-
 #define GL_ARRAY_BUFFER         0x8892
+#define GL_COLOR_BUFFER_BIT     0x00004000
+#define GL_COMPILE_STATUS       0x8B81
+#define GL_DEPTH_BUFFER_BIT     0x00000100
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
-
-#define GL_COLOR_BUFFER_BIT 0x00004000
-#define GL_DEPTH_BUFFER_BIT 0x00000100
-
-#define GL_VENDOR   0x1F00
-#define GL_RENDERER 0x1F01
-
-#define GL_NO_ERROR             0
+#define GL_FALSE                0
+#define GL_FLOAT                0x1406
+#define GL_FRAGMENT_SHADER      0x8B30
 #define GL_INVALID_ENUM         0x0500
-#define GL_INVALID_VALUE        0x0501
 #define GL_INVALID_OPERATION    0x0502
+#define GL_INVALID_VALUE        0x0501
+#define GL_LINK_STATUS          0x8B82
+#define GL_NO_ERROR             0
 #define GL_OUT_OF_MEMORY        0x0505
-
-#define GL_STATIC_DRAW 0x88E4
-#define GL_STREAM_DRAW 0x88E0
-
-#define GL_COMPILE_STATUS   0x8B81
-#define GL_LINK_STATUS      0x8B82
+#define GL_RENDERER             0x1F01
+#define GL_STATIC_DRAW          0x88E4
+#define GL_STREAM_DRAW          0x88E0
+#define GL_TRIANGLES            0x0004
+#define GL_TRUE                 1
+#define GL_UNSIGNED_SHORT       0x1403
+#define GL_VENDOR               0x1F00
+#define GL_VERTEX_SHADER        0x8B31
 
 typedef unsigned int    GLenum;
 typedef float           GLfloat;
