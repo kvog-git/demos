@@ -1,1 +1,0 @@
-GLSL shader demos moved to https://fragcoord.xyz/u/kvog
