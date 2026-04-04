@@ -3,6 +3,14 @@
 #define KBENCH_IMPLEMENTATION
 #include "kbench.h"
 
+#include <math.h>
+
+static int cmp_double(const void* a, const void* b)
+{
+    double da = *(const double*)a, db = *(const double*)b;
+    return (da > db) - (da < db);
+}
+
 #ifdef YUVBENCH_ACCELERATE
 Backend yuvbench_accelerate(void);
 #endif
@@ -14,6 +22,9 @@ Backend yuvbench_libyuv(void);
 #endif
 #ifdef YUVBENCH_SWSCALE
 Backend yuvbench_swscale(void);
+#endif
+#ifdef YUVBENCH_CLAUDE
+Backend yuvbench_claude(void);
 #endif
 
 static struct
@@ -70,21 +81,27 @@ static void run_backend(Backend b)
         b.deinit_fn(&ctx);
     }
 
-    double ts_min = -1.0f;
-    double ts_max = -1.0f;
-    double ts_avg = 0.0f;
+    // Sort for percentiles
+    qsort(tests_table, tests, sizeof(double), cmp_double);
+
+    double ts_min = tests_table[0];
+    double ts_max = tests_table[tests - 1];
+    double ts_p50 = tests_table[tests / 2];
+    double ts_p95 = tests_table[(int)(tests * 0.95)];
+    double ts_p99 = tests_table[(int)(tests * 0.99)];
+    double ts_avg = 0.0;
+    for (int i = 0; i < tests; ++i) ts_avg += tests_table[i] / (double)tests;
+    double ts_var = 0.0;
     for (int i = 0; i < tests; ++i) {
-        if (ts_min < 0 || tests_table[i] < ts_min) {
-            ts_min = tests_table[i];
-        }
-        if (ts_max < 0 || tests_table[i] > ts_max) {
-            ts_max = tests_table[i];
-        }
-        ts_avg += (tests_table[i] / (double)tests);
+        double d = tests_table[i] - ts_avg;
+        ts_var += d * d / (double)tests;
     }
-    printf("    min result: %fms\n", ts_min * 1000.0f);
-    printf("    max result: %fms\n", ts_max * 1000.0f);
-    printf("    avg result: %fms\n", ts_avg * 1000.0f);
+    double ts_stddev = sqrt(ts_var);
+
+    #define MS(t) ((t) * 1000.0)
+    printf("    min %8.3fms  p50 %8.3fms  p95 %8.3fms  p99 %8.3fms  max %8.3fms  avg %8.3fms  σ %7.3fms\n",
+           MS(ts_min), MS(ts_p50), MS(ts_p95), MS(ts_p99), MS(ts_max), MS(ts_avg), MS(ts_stddev));
+    #undef MS
 
 
     if (G.show) {
@@ -203,5 +220,9 @@ int main(int argc, char** argv)
 #ifdef YUVBENCH_SWSCALE
     printf("YUVBENCH_SWSCALE\n");
     run_backend(yuvbench_swscale());
+#endif
+#ifdef YUVBENCH_CLAUDE
+    printf("YUVBENCH_CLAUDE\n");
+    run_backend(yuvbench_claude());
 #endif
 }

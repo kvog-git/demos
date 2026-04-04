@@ -9,5 +9,7 @@
 bin
 build
 d3d11-re.*
+microshooter/microshooter_client*
+microshooter/microshooter_server*
 rushmore-linux/out
 rushmore-linux/linux*

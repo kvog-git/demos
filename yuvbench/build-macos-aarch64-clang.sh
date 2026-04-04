@@ -1,5 +1,5 @@
 #!/bin/sh
-CFLAGS="-Wall -Wextra -Wpedantic -O3 -g -DYUVBENCH_ACCELERATE -DYUVBENCH_BAD -DYUVBENCH_SWSCALE"
+CFLAGS="-Wall -Wextra -Wpedantic -O3 -g -DYUVBENCH_ACCELERATE -DYUVBENCH_BAD -DYUVBENCH_SWSCALE -DYUVBENCH_CLAUDE"
 LFLAGS="-framework Accelerate $(pkg-config --libs libswscale)"
 mkdir -p build
 set -x
@@ -8,4 +8,5 @@ clang -o build/yuvbench_accelerate.o $CFLAGS -c ./yuvbench_accelerate.c
 clang -o build/yuvbench_accelerate.S $CFLAGS -S ./yuvbench_accelerate.c
 clang -o build/yuvbench_bad.o $CFLAGS -c ./yuvbench_bad.c
 clang -o build/yuvbench_swscale.o $CFLAGS $(pkg-config --cflags libswscale) -c ./yuvbench_swscale.c
-clang -o build/yuvbench $LFLAGS build/yuvbench.o build/yuvbench_accelerate.o build/yuvbench_bad.o build/yuvbench_swscale.o
+clang -o build/yuvbench_claude.o $CFLAGS -c ./yuvbench_claude.c
+clang -o build/yuvbench $LFLAGS build/yuvbench.o build/yuvbench_accelerate.o build/yuvbench_bad.o build/yuvbench_swscale.o build/yuvbench_claude.o
