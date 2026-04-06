@@ -8,6 +8,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,10 +37,13 @@ void OS_SpewInfo(const char *message);
 // OS -> Client API
 // ================================================================================
 
+typedef void(*GLProcInner)(void);
+typedef GLProcInner(*GLProc)(const char *);
+
 typedef struct CL_InitParams CL_InitParams;
 struct CL_InitParams 
 {
-    void *(*glproc)(const char *);
+    GLProc glproc;
 };
 
 void CL_Init(const CL_InitParams *params);
@@ -199,7 +203,7 @@ typedef intptr_t        GLintptr;
 GLFUNCS
 #undef X
 
-void LoadOpenGLFunctions(void *(*glproc)(const char *))
+void LoadOpenGLFunctions(GLProc glproc)
 {
     #define X(_NAME, _RET, ...)                                             \
         _NAME = (_RET(*)(__VA_ARGS__))glproc(#_NAME);                       \
@@ -529,7 +533,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
     CL_InitParams init = (CL_InitParams)
     {
-        .glproc = (void *(*)(const char *))SDL_GL_GetProcAddress,
+        .glproc = SDL_GL_GetProcAddress,
     };
     CL_Init(&init);
 
@@ -575,6 +579,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     AppState *app = appstate;
 
     SDL_DestroyWindow(app->wnd);
+
+    free(app);
     SDL_Quit();
 }
 
