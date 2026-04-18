@@ -4,8 +4,10 @@
 *.cso
 *.exe
 *.pdb
+*.swp
 *.vcxproj.user
 *.vs
+aarch64/_asmrun_out
 bin
 build
 d3d11-re.*
