@@ -4,10 +4,6 @@
 .global _main
 
 _main:
-    // Save stack frame
-    stp x29, x30, [sp, #-16]!
-    mov x29, sp
-
     // Add
     mov x0, #1
     mov x1, #2
@@ -32,10 +28,3 @@ _main:
     neg x8, x7
 
     brk #0 // (lldb) register read
-
-    // Restore stack frame
-    ldp x29, x30, [sp], #16
-
-    // Return 0
-    mov x0, #0
-    ret

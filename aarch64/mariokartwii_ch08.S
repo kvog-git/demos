@@ -21,10 +21,3 @@ _main:
     movk x3, #0x4444
 
     brk #0 // (lldb) register read
-
-    // Restore stack frame
-    ldp x29, x30, [sp], #16
-
-    // Return 0
-    mov x0, #0
-    ret
