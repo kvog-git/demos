@@ -278,11 +278,38 @@ int main(int argc, char* argv[])
   GL(glEnableVertexAttribArray(0));
   GL(glEnableVertexAttribArray(1));
 
-  const char* vs_src = SDL_LoadFile("vs.glsl", NULL);
-  if (!vs_src) {
-    fprintf(stderr, "Failed to load vertex shader: %s\n", SDL_GetError());
-    return EXIT_FAILURE;
-  }
+#define GLSL(_X) "#version 330 core\n" #_X
+  const char* vs_src = GLSL(
+    layout (location = 0) in vec3 p;
+    layout (location = 1) in vec2 t;
+
+    void main()
+    {
+      gl_Position = vec4(p, 1.0f);
+    }
+  );
+  const char* fs_src1 = GLSL(
+    // https://www.shadertoy.com/howto#q1
+
+    uniform vec4  iMouse;
+    uniform vec3  iResolution;
+    uniform float iTime;
+
+    out vec4 f_color;
+
+    void mainImage(out vec4, vec2);
+
+    void main()
+    {
+      vec4 color;
+      mainImage(color, gl_FragCoord.xy);
+      f_color = color;
+    }
+
+    // keep the line break below
+
+  );
+#undef GLSL
 
   GLuint vs = GL(glCreateShader(GL_VERTEX_SHADER));
   GL(glShaderSource(vs, 1, &vs_src, NULL));
@@ -296,32 +323,19 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
   }
 
-  const char* fs_src1 = SDL_LoadFile("fs1.glsl", NULL);
-  if (!fs_src1) {
-    fprintf(stderr, "Failed to load fragment shader: %s\n", SDL_GetError());
-    return EXIT_FAILURE;
-  }
-
   const char* fs_src2 = SDL_LoadFile(a_src, NULL);
   if (!fs_src2) {
     fprintf(stderr, "Failed to load source shader: %s\n", SDL_GetError());
     return EXIT_FAILURE;
   }
 
-  const char* fs_src3 = SDL_LoadFile("fs2.glsl", NULL);
-  if (!fs_src3) {
-    fprintf(stderr, "Failed to load fragment shader: %s\n", SDL_GetError());
-    return EXIT_FAILURE;
-  }
-
   const char* fs_src[] = {
     fs_src1,
     fs_src2,
-    fs_src3,
   };
 
   GLuint fs = GL(glCreateShader(GL_FRAGMENT_SHADER));
-  GL(glShaderSource(fs, 3, fs_src, NULL));
+  GL(glShaderSource(fs, 2, fs_src, NULL));
   GL(glCompileShader(fs));
   GLint fs_status = 0;
   GL(glGetShaderiv(fs, GL_COMPILE_STATUS, &fs_status));
