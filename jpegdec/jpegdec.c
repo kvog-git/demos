@@ -1,5 +1,5 @@
 // ================================================================================================
-// Basic JPEG decoder. Does no bounds checking on inputs.
+// Simple baseline sequential JPEG decoder. Does no bounds checking on inputs.
 //
 // ref: https://en.wikipedia.org/wiki/JPEG#Syntax_and_structure
 // ref: ITU-T T.81 (1992) — ISO/IEC 10918-1:1994
@@ -25,8 +25,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-// Marker codes - Table B.1
+// Table B.1 - Marker code assignments
 enum
 {
     MC_SOF0 = 0xC0,
@@ -40,7 +41,6 @@ enum
     MC_SOF9 = 0xC9,
     MC_SOFA = 0xCA,
     MC_SOFB = 0xCB,
-    MC_SOFC = 0xCC,
     MC_SOFD = 0xCD,
     MC_SOFE = 0xCE,
     MC_DHT  = 0xC4,
@@ -58,7 +58,7 @@ enum
     MC_SOS  = 0xDA,
     MC_DQT  = 0xDB,
     MC_DNL  = 0xDC,
-    MC_DRI  = 0xFF,
+    MC_DRI  = 0xDD,
     MC_DHP  = 0xDE,
     MC_EXP  = 0xDF,
     MC_APP0 = 0xE0,
@@ -106,74 +106,165 @@ int main(int argc, const char **argv)
 
     const uint8_t *pbuf = bbuf;
 
-    // File should start with SOI
+    // Find required image segments: SOF0, DHT, DQT, SOS
+    bool got_sof0 = false;
+    bool got_dht  = false;
+    bool got_dqt  = false;
+    bool got_sos  = false;
+
+    // DHT data
+    typedef struct HT HT;
+    struct HT
+    {
+        uint8_t        l[16]; // Frequency of each huffman code length
+        size_t         v_len; // Length of huffman code list
+        const uint8_t *v;     // Huffman code list
+    };
+    HT ht_ac[2];
+    HT ht_dc[2];
+
+    // DQT data
+    uint8_t dqt_q[64]; // Quantization table (assumes only 1 table in file)
+
+    // Sanity check, image should start with SOI
     assert(pbuf[0] == 0xFF && pbuf[1] == MC_SOI && "not a jpeg");
-    pbuf += 2;
 
-    #define READ_LEN() ((pbuf[0] << 8) | pbuf[1])
-
+    // B.1.1.3: Markers are 0xFF followed by [0x01, 0xFE]
     while (true) {
-        uint8_t mc0 = pbuf[0];
-        uint8_t mc1 = pbuf[1];
-        pbuf += 2;
-        assert(mc0 == 0xFF);
-        switch (mc1) {
-            case MC_APP0:
-            case MC_APP1:
-            case MC_APP2:
-            case MC_APP3:
-            case MC_APP4:
-            case MC_APP5:
-            case MC_APP6:
-            case MC_APP7:
-            case MC_APP8:
-            case MC_APP9:
-            case MC_APPA:
-            case MC_APPB:
-            case MC_APPC:
-            case MC_APPD:
-            case MC_APPE:
-            case MC_APPF: {
-                printf("MC_APP%d\n", mc1 & 0xF);
-                uint16_t len = READ_LEN();
-                pbuf += len;
-            } break;
+        const uint8_t marker = pbuf[1];
+        printf("Marker code: FF%X\n", pbuf[1]);
+
+        // Don't overrun the buffer when parsing good files, at least
+        if (marker == MC_EOI) {
+            break;
+        }
+
+        // Segment payload to skip while scanning for next marker
+        size_t skip = 2;
+
+        // Everything other than SOI and EOI has a payload. EOI doesn't reach here.
+        const uint8_t *sbuf = 0;
+        size_t         slen = 0;
+        if (marker != MC_SOI) {
+            sbuf = pbuf + 2;
+            slen = pbuf[2] << 8 | pbuf[3];
+            skip += slen;
+        }
+
+        // Segment-specific parsing
+        switch (marker) {
             case MC_COM: {
-                printf("MC_COM\n");
-                uint16_t len = READ_LEN();
-                pbuf += len;
+                printf("COM:\n");
+                printf("    %.*s\n", (int)(skip - 4), (const char *)&pbuf[4]);
             } break;
             case MC_DHT: {
-                printf("MC_DHT\n");
-                uint16_t len = READ_LEN();
-                pbuf += len;
+                got_dht = true;
+
+                printf("DHT:\n");
+
+                // B.2.4.2
+                size_t pos = 2;  // skip Lh
+                while (pos < slen) {
+                    const uint8_t tc = sbuf[pos] >> 4;
+                    const uint8_t th = sbuf[pos] & 0xF;
+                    ++pos;
+
+                    assert(th < 2);
+
+                    HT *ht = (tc == 0) ? &ht_dc[th] : &ht_ac[th];
+
+                    // Read huffman code frequencies
+                    memcpy(ht->l, sbuf + pos, 16);
+                    pos += 16;
+
+                    // Sum all huffman code frequencies
+                    ht->v_len = 0;
+                    for (size_t i = 0; i < 16; ++i) {
+                        ht->v_len += ht->l[i];
+                    }
+
+                    // Read huffman codes
+                    ht->v = sbuf + pos;
+                    pos += ht->v_len;
+
+                    printf("    Table:\n");
+                    printf("        Tc: %d\n", tc);
+                    printf("        Th: %d\n", th);
+                    printf("         L: ");
+                    for (size_t i = 0; i < 16; ++i) {
+                        printf("%d ", ht->l[i]);
+                    }
+                    printf("\n");
+                    printf("         V:\n            ");
+                    for (size_t i = 0; i < ht->v_len; ++i) {
+                        printf("%3d ", ht->v[i]);
+                        if (i % 8 == 7) {
+                            printf("\n            ");
+                        }
+                    }
+                    printf("\n");
+                }
             } break;
             case MC_DQT: {
-                printf("MC_DQT\n");
-                uint16_t len = READ_LEN();
-                pbuf += len;
+                got_dqt = true;
+
+                // B.2.4.1
+                const uint8_t pq = sbuf[2] >> 4;
+                const uint8_t tq = sbuf[2] & 0xF;
+                assert(pq == 0 && "DQT.Pq must be 0 in baseline configuration");
+                assert(tq == 0 && "FIXME only 1 quantization table supported");
+                memcpy(dqt_q, sbuf + 3, sizeof(dqt_q));
+        
+                printf("DQT:\n");
+                printf("    Pq: %d\n", pq);
+                printf("    Tq: %d\n", tq);
+                printf("     Q:\n");
+                for (size_t i = 0; i < 64; ++i) {
+                    if (i % 8 == 0) { printf("        "); } 
+                    printf("%2X ", dqt_q[i]);
+                    if (i % 8 == 7) { printf("\n"); }
+                }
             } break;
             case MC_SOF0: {
-                printf("MC_SOF0 (Baseline DCT)\n");
-                uint16_t len = READ_LEN();
-                pbuf += len;
-            } break;
-            case MC_SOF2: {
-                printf("MC_SOF2 (Progressive DCT)\n");
-                uint16_t len = READ_LEN();
-                pbuf += len;
+                got_sof0 = true;
+
+                printf("SOF:\n");
             } break;
             case MC_SOS: {
-                // Section B.2.3
-                printf("MC_SOS\n");
-                uint16_t len = READ_LEN();
-                pbuf += len;
+                got_sos = true;
+
+                // @@ increment skip so next marker scan doesn't find halfway through the entropy
+                // data on a restart marker
+                printf("SOS:\n");
             } break;
-            default: {
-                printf("Got unknown marker code 0x%X\n", mc1);
-                exit(1);
-            } break;
+        };
+
+        // Scan for next marker
+        for (size_t i = skip; ; ++i) {
+            if (pbuf[i] == 0xFF && (pbuf[i + 1] >= 0x01 && pbuf[i + 1] <= 0xFE)) {
+                pbuf += i;
+                break;
+            }
         }
     }
+
+    if (!got_sof0) {
+        printf("Missing segment SOF0. Image is not sequential baseline\n");
+        return 1;
+    }
+    if (!got_dht) {
+        printf("Missing segment DHT\n");
+        return 1;
+    }
+    if (!got_dqt) {
+        printf("Missing segment DQT\n");
+        return 1;
+    }
+    if (!got_sos) {
+        printf("Missing segment SOS\n");
+        return 1;
+    }
+
+    free(bbuf);
 }
 
