@@ -3,6 +3,7 @@
 //
 // ref: https://en.wikipedia.org/wiki/JPEG#Syntax_and_structure
 // ref: ITU-T T.81 (1992) — ISO/IEC 10918-1:1994
+// ref: https://github.com/richgel999/picojpeg/blob/master/picojpeg.c
 //
 // Test files:
 //     $ ffmpeg -f lavfi -i testsrc=size=800x600:rate=1 -frames:v 1 test.jpg
@@ -26,6 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <SDL3/SDL.h>
 
 // Table B.1 - Marker code assignments
 enum
@@ -116,7 +119,7 @@ int main(int argc, const char **argv)
     typedef struct HT HT;
     struct HT
     {
-        uint8_t        l[16]; // Frequency of each huffman code length
+        uint8_t        l[16]; // Frequency of each Huffman code length
         size_t         v_len; // Length of huffman code list
         const uint8_t *v;     // Huffman code list
     };
@@ -125,6 +128,18 @@ int main(int argc, const char **argv)
 
     // DQT data
     uint8_t dqt_q[64]; // Quantization table (assumes only 1 table in file)
+
+    // SOF data
+    typedef struct Channel Channel;
+    struct Channel
+    {
+        uint8_t h;   // Horizontal sampling factor
+        uint8_t v;   // Vertical sampling factor
+        uint8_t tqi; // Quantization table selector
+    };
+    Channel sof_ch[3];
+    uint16_t sof_x;
+    uint16_t sof_y;
 
     // Sanity check, image should start with SOI
     assert(pbuf[0] == 0xFF && pbuf[1] == MC_SOI && "not a jpeg");
@@ -228,14 +243,80 @@ int main(int argc, const char **argv)
             case MC_SOF0: {
                 got_sof0 = true;
 
+                // B.2.2
+                const uint8_t  p  = sbuf[2];
+                sof_y = sbuf[3] << 8 | sbuf[4];
+                sof_x = sbuf[5] << 8 | sbuf[6];
+                const uint8_t  nf = sbuf[7];
+
+                assert(p  == 8 && "SOF0.P must be 8 in baseline configuration");
+                assert(nf == 3 && "only 3-channel supported");
+
+                size_t pos = 8;
+                for (uint8_t i = 0; i < nf; ++i) {
+                    const uint8_t ci = sbuf[pos] - 1;
+                    assert(ci < 3);
+                    pos += 1;
+                    sof_ch[ci].h = sbuf[pos] >> 4;
+                    sof_ch[ci].v = sbuf[pos] & 0xF;
+                    pos += 1;
+                    sof_ch[ci].tqi = sbuf[pos];
+                    pos += 1;
+                }
+
                 printf("SOF:\n");
+                printf("     P: %d\n", p);
+                printf("     Y: %d\n", sof_y);
+                printf("     X: %d\n", sof_x);
+                printf("    Nf: %d\n", nf);
+                printf("    Ch:\n");
+                for (uint8_t i = 0; i < nf; ++i) {
+                    Channel *ch = &sof_ch[i];
+                    printf("        h = %d v = %d tqi = %d\n", ch->h, ch->v, ch->tqi);
+                }
+
             } break;
             case MC_SOS: {
                 got_sos = true;
 
+                // B.2.3
+                const uint8_t ns = sbuf[2];
+
+                assert(ns == 3 && "expected 3 planes");
+
+                size_t pos = 3;
+                for (uint8_t i = 0; i < ns; ++i) {
+                    uint8_t csj = sbuf[pos];
+                    pos += 1;
+                    uint8_t tdj = sbuf[pos] >> 4;
+                    uint8_t taj = sbuf[pos] & 0xF;
+                    pos += 1;
+                    printf("csj: %d\n", csj);
+                    printf("tdj: %d\n", tdj);
+                    printf("taj: %d\n", taj);
+                    //break;
+                }
+
+                uint8_t ss = sbuf[pos];
+                pos += 1;
+
+                uint8_t se = sbuf[pos];
+                pos += 1;
+
+                uint8_t ah = sbuf[pos] >> 4;
+                uint8_t al = sbuf[pos] & 0xF;
+                pos += 1;
+
+                assert(ss == 0 && se == 63 && ah == 0 && al == 0 && "not baseline sequential");
+
                 // @@ increment skip so next marker scan doesn't find halfway through the entropy
                 // data on a restart marker
                 printf("SOS:\n");
+                printf("    Ns: %d\n", ns);
+                printf("    Ss: %d\n", ss);
+                printf("    Se: %d\n", se);
+                printf("    Ah: %d\n", ah);
+                printf("    Al: %d\n", al);
             } break;
         };
 
@@ -265,6 +346,48 @@ int main(int argc, const char **argv)
         return 1;
     }
 
-    free(bbuf);
+    // ref: F.2
+
+    // Build huffman decode trees
+
+    return 0;
+
+    SDL_Init(SDL_INIT_VIDEO);
+
+#define SIDEBAR 250
+
+    SDL_Window   *wnd;
+    SDL_Renderer *r;
+    if (!SDL_CreateWindowAndRenderer("jpegdec", sof_x + SIDEBAR, sof_y, 0, &wnd, &r)) {
+        printf("error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    SDL_Texture *tex = SDL_CreateTexture(r, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STATIC, sof_x,
+                                         sof_y);
+    if (!tex) {
+        printf("error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    SDL_UpdateYUVTexture(tex, 0, 0, 0, 0, 0, 0, 0);
+
+    while (true) {
+        SDL_Event evt;
+        while (SDL_PollEvent(&evt)) {
+            switch (evt.type) {
+                case SDL_EVENT_QUIT: {
+                    exit(0);
+                } break;
+            }
+        }
+
+        SDL_FRect dst = {
+            .w = sof_x,
+            .h = sof_y
+        };
+        SDL_RenderTexture(r, tex, 0, &dst);
+        SDL_RenderPresent(r);
+    }
 }
 
