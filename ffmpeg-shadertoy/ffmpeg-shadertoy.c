@@ -238,6 +238,7 @@ int main(int argc, const char **argv)
     const char *fs_src1 =
         "#version 330 core                              \n"
         "                                               \n"
+        "uniform float iFrame;                          \n"
         "uniform vec4  iMouse;                          \n"
         "uniform vec3  iResolution;                     \n"
         "uniform float iTime;                           \n"
@@ -303,6 +304,7 @@ int main(int argc, const char **argv)
             quit |= (evt.type == SDL_EVENT_KEY_DOWN && evt.key.key == SDLK_Q);
         }
 
+        glUniform1f(glGetUniformLocation(prog, "iFrame"), (int)frame_pts);
         glUniform1f(glGetUniformLocation(prog, "iTime"), t);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
