@@ -324,6 +324,12 @@ int main(int argc, const char **argv)
         ret = avcodec_send_frame(avcc, dst_frame);
         ASSERT_AV(ret, "Failed to send frame to encoder");
 
+        // After the last frame, flush the encoder
+        if (quit || t + 1.0f / (double)a_r > (double)a_t) {
+            ret = avcodec_send_frame(avcc, 0);
+            ASSERT_AV(ret, "Failed to flush encoder");
+        }
+
         // Receive 0 or more packets from encoder
         while (ret >= 0) {
             ret = avcodec_receive_packet(avcc, pkt);
