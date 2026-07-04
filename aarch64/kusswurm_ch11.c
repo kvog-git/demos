@@ -34,6 +34,7 @@ void test_mov1(uint32_t *tab);
 
 int main(int argc, const char* argv[])
 {
+    (void)argc; (void)argv;
 #define X(FMT, CODE) printf(#CODE ": " FMT "\n", CODE)
 
     // example 1
