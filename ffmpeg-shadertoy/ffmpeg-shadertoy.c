@@ -1,5 +1,5 @@
 // ================================================================================================
-// Basic offline shadertoy rendererer. Textures are not supported.
+// Basic offline shadertoy renderer. Textures are not supported.
 //
 // Usage:
 //     $ ffmpeg-shadertoy <input.glsl> <output> -w <width> -h <height> -r <fps> -t <length>
@@ -8,7 +8,8 @@
 //     $ ffmpeg-shadertoy ./seascape.glsl -w 1920 -h 1080 -r 60 seascape.mkv
 //
 // Changelog:
-//     6/7/2026: Initial release
+//     6/7/2026:  Initial release
+//     9/18/2026: Minor cleanup
 //
 // License:
 //     SPDX-License-Identifier: 0BSD
@@ -171,7 +172,7 @@ int main(int argc, const char **argv)
     ASSERT_AV(ret, "Failed to make dst frame writable");
 
     // RGBA to YUV420P conversion context.
-    // This coule be replaced with a simple GLSL shader, but this is less code.
+    // This could be replaced with a simple GLSL shader, but this is less code.
     struct SwsContext *sws = sws_getContext(src_frame->width, src_frame->height, src_frame->format,
                                             dst_frame->width, dst_frame->height, dst_frame->format,
                                             0, 0, 0, 0);
@@ -226,31 +227,32 @@ int main(int argc, const char **argv)
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
     glEnableVertexAttribArray(0);
 
-    const char *vs_src = 
-        "#version 330 core                              \n"
-        "                                               \n"
-        "layout (location = 0) in vec2 p;               \n"
-        "                                               \n"
-        "void main()                                    \n"
-        "{                                              \n"
-        "    gl_Position = vec4(p.x, p.y, 0.0f, 1.0f);  \n"
-        "}                                              \n";
-    const char *fs_src1 =
-        "#version 330 core                              \n"
-        "                                               \n"
-        "uniform float iFrame;                          \n"
-        "uniform vec4  iMouse;                          \n"
-        "uniform vec3  iResolution;                     \n"
-        "uniform float iTime;                           \n"
-        "                                               \n"
-        "out vec4 _color;                               \n"
-        "                                               \n"
-        "void mainImage(out vec4, vec2);                \n"
-        "                                               \n"
-        "void main()                                    \n"
-        "{                                              \n"
-        "    mainImage(_color, gl_FragCoord.xy);        \n"
-        "}                                              \n";
+#define GLSL_STR(...) "#version 330 core\n" # __VA_ARGS__
+
+    const char *vs_src = GLSL_STR(
+        layout (location = 0) in vec2 p;
+
+        void main()
+        {
+            gl_Position = vec4(p.x, p.y, 0.0f, 1.0f);
+        }
+    );
+
+    const char *fs_src1 = GLSL_STR(
+        uniform int   iFrame;
+        uniform vec4  iMouse;
+        uniform vec3  iResolution;
+        uniform float iTime;
+
+        out vec4 _color;
+
+        void mainImage(out vec4, vec2);
+
+        void main()
+        {
+            mainImage(_color, gl_FragCoord.xy);
+        }
+    );
 
     const char *fs_src2 = SDL_LoadFile(a_src, 0);
     if (!fs_src2) {
@@ -308,7 +310,6 @@ int main(int argc, const char **argv)
         glUniform1f(glGetUniformLocation(prog, "iTime"), t);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        SDL_GL_SwapWindow(wnd);
 
         // Read pixels from screen into src_frame
         glReadPixels(0, 0, a_w, a_h, GL_RGBA, GL_UNSIGNED_BYTE, src_frame->data[0]);
@@ -348,6 +349,8 @@ int main(int argc, const char **argv)
             ret = av_interleaved_write_frame(avfc, pkt);
             ASSERT_AV(ret, "Failed to write packet to file");
         }
+
+        SDL_GL_SwapWindow(wnd);
     }
 
     ret = av_write_trailer(avfc);
