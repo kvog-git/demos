@@ -8,6 +8,7 @@ Mirror                  https://github.com/kvog-git/demos
 
 aarch64                 AArch64 assembly experiments
 ffmpeg-shadertoy        Basic offline Shadertoy renderer
+riffprobe               Basic RIFF/WAVE file traversal
 vk-cube                 Spinning cube Vulkan demo
 win-resize-mt           Drawing while resizing on Windows (multi threaded)
 win-resize-st           Drawing while resizing on Windows (single threaded)
