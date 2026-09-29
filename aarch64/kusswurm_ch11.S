@@ -12,7 +12,7 @@
 //     WITH REGARD TO THIS SOFTWARE.
 // ================================================================================================
 
-#include "common.S"
+#include "../_common/aarch64/common.S"
 
 TEXT_SEGMENT
 
