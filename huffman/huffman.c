@@ -5,6 +5,7 @@
 //
 // Changelog:
 //     9/29/2026: Initial release
+//     10/1/2026: Added decode + round-trip check
 //
 // License:
 //     SPDX-License-Identifier: 0BSD
@@ -74,7 +75,6 @@ static void write_bits(BitW *bw, uint64_t val, uint8_t len)
         write_bit(bw, (val >> (len - i - 1)) & 1);
 }
 
-#if 0
 // bit reader
 typedef struct BitR BitR;
 struct BitR
@@ -108,7 +108,6 @@ static uint64_t read_bits(BitR *br, uint8_t len)
     }
     return r;
 }
-#endif
 
 // This demo encodes raw bytes (domain [0, 255])
 #define MAX_SYMBOLS 256
@@ -141,9 +140,9 @@ static int sort_node_freq(const void *p1, const void *p2)
 // arena allocator for internal nodes
 static Node *new_node(void)
 {
-    static Node   buf[MAX_INTERNAL_NODES];
+    static Node   buf[MAX_NODES * 2];
     static size_t idx = 0;
-    assert(idx < MAX_INTERNAL_NODES);
+    assert(idx < MAX_NODES * 2);
     return &buf[idx++];
 }
 
@@ -186,7 +185,7 @@ static void write_tree(BitW *bw, Node *n)
     write_tree(bw, n->tr);
 }
 
-void decompress(const uint8_t *bbuf, size_t blen);
+uint8_t *decompress(const uint8_t *bbuf, size_t blen, size_t *olen);
 
 int main(int argc, char **argv)
 {
@@ -308,6 +307,62 @@ int main(int argc, char **argv)
         write_bits(&bw, c->bits, c->len);
     }
 
+
+    size_t   olen = 0;
+    uint8_t *obuf = decompress(bw.bbuf, bw.blen, &olen);
+
     printf("input size:      %zu bits\n", ilen * 8);
     printf("compressed size: %zu bits\n", bw.cbyte * 8 + bw.cbit);
+    printf("output size:     %zu bits\n", olen * 8);
+
+    if (olen != ilen || memcmp(obuf, ibuf, ilen))
+        die("round trip mismatch");
+
+    printf("round-trip success\n");
 }
+
+static Node *read_tree(BitR *br)
+{
+    Node *n = new_node();
+
+    if (read_bit(br))
+    {
+        // leaf
+        n->sym = read_bits(br, 8);
+        return n;
+    }
+
+    // internal
+    n->tl = read_tree(br);
+    n->tr = read_tree(br);
+    return n;
+}
+
+static Node *traverse(BitR *br, Node *n)
+{
+    Node *p = read_bit(br) ? n->tr : n->tl;
+    if (!p->tl)
+        return p;
+    return traverse(br, p);
+}
+
+uint8_t *decompress(const uint8_t *bbuf, size_t blen, size_t *olen)
+{
+    BitR br = { bbuf, blen, 0, 0 };
+
+    *olen = read_bits(&br, 32);
+    uint8_t *obuf = malloc(*olen);
+
+    Node *root = read_tree(&br);
+
+    for (size_t i = 0; i < *olen; ++i)
+    {
+        obuf[i] = traverse(&br, root)->sym;
+    }
+
+#ifdef DEBUG
+    printf("%.*s\n", (int)*olen, (const char *)obuf);
+#endif
+    return obuf;
+}
+
