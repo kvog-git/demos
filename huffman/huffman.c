@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef __GNUC__
 #  define ATTR_NORETURN       __attribute__((noreturn))
@@ -191,11 +191,18 @@ void decompress(const uint8_t *bbuf, size_t blen);
 int main(int argc, char **argv)
 {
     if (argc < 2)
-        die("supply an input string\n");
+        die("supply a file\n");
 
-    printf("inp: %s\n", argv[1]);
-    const uint8_t *ibuf = (const uint8_t *)argv[1];
-    const size_t   ilen = strlen(argv[1]);
+    FILE *f = fopen(argv[1], "rb");
+    if (!f)
+        die("failed to open file\n");
+
+    fseek(f, 0, SEEK_END);
+    const size_t ilen = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    uint8_t *ibuf = malloc(ilen);
+    fread(ibuf, 1, ilen, f);
 
     // Set of all possible symbols
     Node syms[MAX_SYMBOLS] = { 0 };
