@@ -18,8 +18,17 @@
 //     WITH REGARD TO THIS SOFTWARE.
 // ================================================================================================
 
+#ifdef _MSC_VER
+#   pragma warning(disable: 4244)
+#   pragma warning(disable: 4267)
+#   define _CRT_SECURE_NO_WARNINGS
+#   define popen(A, B) _popen(A, "wb")
+#   define pclose _pclose
+#endif
+
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,7 +112,7 @@ void read_coded_residuals(BitR *br, uint32_t block_size, uint8_t order, int32_t 
     // (9.2.7)
     uint8_t rice_bits  = read_bits(br, 2) ? 5 : 4;
     uint8_t rice_order = read_bits(br, 4);
-    size_t  rice_partitions = 1 << rice_order;
+    size_t  rice_partitions = (size_t)1 << rice_order;
     assert(block_size % rice_partitions == 0);
 
     for (size_t i = 0; i < rice_partitions; ++i) {
