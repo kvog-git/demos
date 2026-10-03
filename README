@@ -11,7 +11,6 @@ ffmpeg-shadertoy        Basic offline Shadertoy renderer
 gl-asylum               Procedurally generated 3D OpenGL scene
 huffman                 Huffman encoding demo
 qoidec                  Quite OK Image Format decoder
-riffprobe               Basic RIFF/WAVE file traversal
 rust-asm                Rust -> assembly interop demo
 rustlings               rustlings
 vk-cube                 Spinning cube Vulkan demo
