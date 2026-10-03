@@ -6,13 +6,12 @@ correct, performant, safe, or (generally speaking) good.
 Home page               https://git.kvog.sh/demos
 Mirror                  https://github.com/kvog-git/demos
 
-aarch64                 AArch64 assembly experiments
+aarch64/                AArch64 assembly experiments
 ffmpeg-shadertoy        Basic offline Shadertoy renderer
 gl-asylum               Procedurally generated 3D OpenGL scene
 huffman                 Huffman encoding demo
 qoidec                  Quite OK Image Format decoder
-rust-asm                Rust -> assembly interop demo
-rustlings               rustlings
+rust/                   Rust programming language experiments
 vk-cube                 Spinning cube Vulkan demo
-win-resize-mt           Drawing while resizing on Windows (multi threaded)
-win-resize-st           Drawing while resizing on Windows (single threaded)
+win/resize-mt           Drawing while resizing (multi threaded)
+win/resize-st           Drawing while resizing (single threaded)
