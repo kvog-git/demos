@@ -8,7 +8,6 @@
 //     10/1/2026: Added decode + round-trip check
 //
 // License:
-//     SPDX-License-Identifier: 0BSD
 //     Copyright (c) 2026 Hunter Kvalevog
 //
 //     Permission to use, copy, modify, and/or distribute this software for any

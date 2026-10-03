@@ -2,7 +2,6 @@
 // Code written while reading chapter 11 of Modern Arm Assembly Language Programming
 //
 // License:
-//     SPDX-License-Identifier: 0BSD
 //     Copyright (c) 2026 Hunter Kvalevog
 //
 //     Permission to use, copy, modify, and/or distribute this software for any
