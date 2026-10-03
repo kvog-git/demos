@@ -8,6 +8,7 @@ Mirror                  https://github.com/kvog-git/demos
 
 aarch64/                AArch64 assembly experiments
 ffmpeg-shadertoy        Basic offline Shadertoy renderer
+flacdec                 FLAC decoder
 gl-asylum               Procedurally generated 3D OpenGL scene
 huffman                 Huffman encoding demo
 qoidec                  Quite OK Image Format decoder
