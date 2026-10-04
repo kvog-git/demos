@@ -11,7 +11,7 @@
 //     WITH REGARD TO THIS SOFTWARE.
 // ================================================================================================
 
-#include "../../../_common/aarch64/common.S"
+#include "../../_common/aarch64/common.S"
 
 TEXT_SEGMENT
 
