@@ -4,6 +4,7 @@
 // ffmpeg -i inp.mp3 -ac 2 -sample_fmt s16 out.flac
 //
 // ref: https://www.rfc-editor.org/rfc/rfc9639.pdf
+// ref: https://fgiesen.wordpress.com/2018/02/19/reading-bits-in-far-too-many-ways-part-1/
 //
 // Changelog:
 //     10/03/2026: Initial release
@@ -36,8 +37,10 @@
 #define DIE(...) do { fprintf(stderr, __VA_ARGS__); abort(); } while (0)
 
 #ifndef NO_SPEW
+#   define ASSERT(...) assert(__VA_ARGS__)
 #   define SPEW(...) do { fprintf(stderr, __VA_ARGS__); } while (0)
 #else
+#   define ASSERT(...)
 #   define SPEW(...)
 #endif
 
@@ -52,14 +55,14 @@ struct BitR
 
 uint8_t peek_bit(BitR *br)
 {
-    assert(br->cbyte < br->blen);
+    ASSERT(br->cbyte < br->blen);
     uint8_t bit = (br->bbuf[br->cbyte] >> (7 - br->cbit)) & 1;
     return bit;
 }
 
 uint8_t read_bit(BitR *br)
 {
-    assert(br->cbyte < br->blen);
+    ASSERT(br->cbyte < br->blen);
     uint8_t bit = (br->bbuf[br->cbyte] >> (7 - br->cbit)) & 1;
     br->cbit += 1;
     br->cbyte += br->cbit / 8;
@@ -69,8 +72,8 @@ uint8_t read_bit(BitR *br)
 
 void read_bytes(BitR *br, size_t len, uint8_t *out)
 {
-    assert(!br->cbit);
-    assert(br->cbyte + len <= br->blen);
+    ASSERT(!br->cbit);
+    ASSERT(br->cbyte + len <= br->blen);
     for (size_t i = 0; i < len; ++i) {
         out[i] = br->bbuf[br->cbyte];
         br->cbyte += 1;
@@ -113,7 +116,7 @@ void read_coded_residuals(BitR *br, uint32_t block_size, uint8_t order, int32_t 
     uint8_t rice_bits  = read_bits(br, 2) ? 5 : 4;
     uint8_t rice_order = read_bits(br, 4);
     size_t  rice_partitions = (size_t)1 << rice_order;
-    assert(block_size % rice_partitions == 0);
+    ASSERT(block_size % rice_partitions == 0);
 
     for (size_t i = 0; i < rice_partitions; ++i) {
         size_t num = block_size >> rice_order;
@@ -274,7 +277,7 @@ int main(int argc, char **argv)
     }
 
     // only stero s16 is supported
-    assert(num_channels == 2 && bit_depth == 16);
+    ASSERT(num_channels == 2 && bit_depth == 16);
 
     int32_t *subframe_buf = 0;  // raw subframe samples. side channel can be 17-bit
     int16_t *samples_buf  = 0;  // output samples
@@ -290,14 +293,14 @@ int main(int argc, char **argv)
     //for (;;) {
     while (br.cbyte < br.blen) {
         // Frames must start on a byte boundary (9.1)
-        assert(!br.cbit);
+        ASSERT(!br.cbit);
         // Frames must start with a sync code
         uint16_t sync_code = read_bits(&br, 15);
-        assert(sync_code == 0x7FFC);
+        ASSERT(sync_code == 0x7FFC);
         
         // Assume encoder was good and all frames have the same blocking strategy bit
         bool variable_block_size = read_bit(&br);
-        assert(!variable_block_size && "unsupported encoding");
+        ASSERT(!variable_block_size && "unsupported encoding");
 
         uint8_t bs_code = read_bits(&br, 4);
         uint8_t sr_code = read_bits(&br, 4);
@@ -323,7 +326,7 @@ int main(int argc, char **argv)
 
             for (uint8_t i = 0; i < extra; ++i) {
                 uint8_t b = read_bits(&br, 8);
-                assert(b >> 6 == 0x02 && "invalid UTF-8 code");
+                ASSERT(b >> 6 == 0x02 && "invalid UTF-8 code");
                 frame_num <<= 6;
                 frame_num |= (b & 0x3F);
             }
@@ -344,7 +347,7 @@ int main(int argc, char **argv)
             block_size = read_bits(&br, 16) + 1;
         else
             block_size = 1 << bs_code;
-        assert(block_size);
+        ASSERT(block_size);
         SPEW("  %d samples\n", block_size);
 
         // Parse sample rate (9.1.2)
@@ -356,10 +359,10 @@ int main(int argc, char **argv)
 
         // Parse bit depth (9.1.4)
         const uint8_t bdtab[] = { bit_depth, 8, 12, 0, 16, 20, 24, 32 };
-        assert(bd_code < 8 && bd_code != 3);
+        ASSERT(bd_code < 8 && bd_code != 3);
         uint8_t frame_bd = bdtab[bd_code];
         // frame and header bit depth must be the same
-        assert(frame_bd == bit_depth);
+        ASSERT(frame_bd == bit_depth);
 
         // Skip CRC
         skip_bits(&br, 8);
@@ -370,14 +373,14 @@ int main(int argc, char **argv)
             subframe_buf = realloc(subframe_buf, block_size * sizeof(int32_t) * 2); // 2 channels
             samples_buf  = realloc(samples_buf,  block_size * sizeof(int16_t) * 2);
             samples_len = block_size;
-            assert(subframe_buf && samples_buf);
+            ASSERT(subframe_buf && samples_buf);
         }
 
         // Subframes
         for (size_t sf_num = 0; sf_num < 2; ++sf_num) {
             SPEW("  +subframe %zu\n", sf_num);
             // First subframe should start on a byte boundary
-            assert(sf_num != 0 || !br.cbit);
+            ASSERT(sf_num != 0 || !br.cbit);
 
             int32_t *samples = subframe_buf + block_size * sf_num;
 
@@ -405,7 +408,7 @@ int main(int argc, char **argv)
                 pred_type  = PRED_LINEAR;
                 pred_order = sf_type_bits - 32 + 1;
             } else {
-                assert(!"invalid predictor type");
+                ASSERT(!"invalid predictor type");
             }
             SPEW("    pred=%d order=%d\n", pred_type, pred_order);
 
@@ -447,7 +450,7 @@ int main(int argc, char **argv)
             } break;
             case PRED_FIXED: {
                 // (9.2.5)
-                assert(pred_order < 5);
+                ASSERT(pred_order < 5);
                 for (uint8_t i = 0; i < pred_order; ++i)
                     samples[cur++] = read_sbits(&br, sf_bd);
 
@@ -476,7 +479,7 @@ int main(int argc, char **argv)
 
                 int16_t lpc_coeffs[32];
                 uint8_t lpc_coeff_width = read_bits(&br, 4) + 1;
-                int8_t  lpc_shift = read_sbits(&br, 5); assert(lpc_shift >= 0);
+                int8_t  lpc_shift = read_sbits(&br, 5); ASSERT(lpc_shift >= 0);
                 for (uint8_t i = 0; i < pred_order; ++i) {
                     lpc_coeffs[i] = read_sbits(&br, lpc_coeff_width);
                 }
@@ -537,7 +540,7 @@ int main(int argc, char **argv)
                 l = (m + s2[i]) >> 1;
                 r = (m - s2[i]) >> 1;
             } break;
-            default: assert(!"unsupported channel layout");
+            default: ASSERT(!"unsupported channel layout");
             }
             // interleaved write
             samples_buf[2 * i + 0] = l;
