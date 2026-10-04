@@ -35,7 +35,7 @@
 
 #define DIE(...) do { fprintf(stderr, __VA_ARGS__); abort(); } while (0)
 
-#if 1
+#ifndef NO_SPEW
 #   define SPEW(...) do { fprintf(stderr, __VA_ARGS__); } while (0)
 #else
 #   define SPEW(...)
