@@ -31,6 +31,9 @@ int32_t test_ldr1(int32_t i, int64_t j, int32_t *tab);
 // example 5
 void test_mov1(uint32_t *tab);
 
+// example 6
+void test_shift1(uint32_t *tab);
+
 int main(int argc, const char* argv[])
 {
     (void)argc; (void)argv;
@@ -66,6 +69,16 @@ int main(int argc, const char* argv[])
     uint32_t out[3] = { 0, 0, 0 };
     test_mov1(out);
     printf("test_mov1(out):\n");
+    printf("    out[0] = 0x%X\n", out[0]);
+    printf("    out[1] = 0x%X\n", out[1]);
+    printf("    out[2] = 0x%X\n", out[2]);
+
+    // example 6
+    out[0] = 1; // starting val
+    out[1] = 8; // shift left by
+    out[2] = 4; // shift right by
+    test_shift1(out);
+    printf("test_shift1(out):\n");
     printf("    out[0] = 0x%X\n", out[0]);
     printf("    out[1] = 0x%X\n", out[1]);
     printf("    out[2] = 0x%X\n", out[2]);

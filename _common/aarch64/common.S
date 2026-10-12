@@ -11,11 +11,8 @@
 //     WITH REGARD TO THIS SOFTWARE.
 // ================================================================================================
 
-#define CONCAT_(A, B) A ## B
-#define CONCAT(A, B) CONCAT_(A, B)
-
 #ifdef __APPLE__
-#   define SYM(LABEL) CONCAT(_, LABEL)
+#   define SYM(LABEL) _##LABEL
 #   define TEXT_SEGMENT .section __TEXT,__text
 #else
 #   define SYM(LABEL) LABEL
