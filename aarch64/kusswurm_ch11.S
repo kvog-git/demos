@@ -122,3 +122,24 @@ SYM(test_mov1):
 
     ret
 
+// example 6
+
+.global SYM(test_shift1)
+
+SYM(test_shift1):
+    // x0: *out
+
+    ldr x9, [x0]        // x9  = out[0]
+    ldr x10, [x0, #4]   // x10 = out[1]
+    ldr x11, [x0, #8]   // x11 = out[2]
+
+    lsl x10, x9, x10
+    lsr x11, x10, x11
+
+    str x10, [x0, #4]
+    str x11, [x0, #8]
+
+    ret
+
+// skipping example 7 because it's very obvious
+
