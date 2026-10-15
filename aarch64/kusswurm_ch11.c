@@ -11,6 +11,7 @@
 //     WITH REGARD TO THIS SOFTWARE.
 // ================================================================================================
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -41,13 +42,13 @@ int main(int argc, const char* argv[])
 
     // example 1
     X("%d", i32_add_sub(5, 3, 1));
-    X("%lld", i64_add_sub(5, 3, 1));
+    X("%" PRId64, i64_add_sub(5, 3, 1));
 
     // example 2
     X("%d", i32_mul(5, 6));
     X("%d", i32_mul(2000000000, 4));
-    X("%lld", i32_mul_safe(5, 6));
-    X("%lld", i32_mul_safe(2000000000, 4));
+    X("%" PRId64, i32_mul_safe(5, 6));
+    X("%" PRId64, i32_mul_safe(2000000000, 4));
 
 #undef X
 #define X(CODE) CODE; printf(#CODE ": quo=%d rem=%d\n", quo, rem)
