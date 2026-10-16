@@ -1,4 +1,11 @@
 // ================================================================================================
+// Constants
+// ================================================================================================
+
+.equ VP_W, 800
+.equ VP_H, 600
+
+// ================================================================================================
 // Read-only data
 // ================================================================================================
 #ifdef __APPLE__
@@ -55,6 +62,7 @@ g_wnd: .zero 8          // SDL_Window *
 
 .global SYM(main)
 
+// entry point
 SYM(main):
     stp         x29, x30, [sp, #-16]!
     mov         x29, sp
@@ -65,8 +73,8 @@ SYM(main):
     b.eq        LBL(sdl_fail)
 
     LOADADDR    x0, s_microshmup
-    mov         w1, #800
-    mov         w2, #600
+    mov         w1, VP_W
+    mov         w2, VP_H
     mov         x3, #0
     bl          SYM(SDL_CreateWindow)
     cbz         x0, LBL(sdl_fail)
@@ -81,9 +89,24 @@ SYM(main):
     LOADADDR    x9, g_rnd
     str         x0, [x9]
 
-    // test: blit green
+// main loop start
+LBL(main_loop):
+    LOADADDR    x0, g_evt
+    bl          SYM(SDL_PollEvent)
+    tst         x0, #0xFF
+    b.eq        LBL(main_loop_render)
+
+    LOADADDR    x0, g_evt
+    ldr         w0, [x0, #0]            // SDL_Event.type
+    cmp         w0, #0x100
+    b.eq        LBL(main_loop_done)
+    b           LBL(main_loop)
+
+// main loop, after polling inputs
+LBL(main_loop_render):
+
 #if 1
-LBL(loop):
+    // test: blit green
     LOADADDR    x0, g_rnd
     ldr         x0, [x0]
     mov         w1, #0x00
@@ -99,16 +122,10 @@ LBL(loop):
     LOADADDR    x0, g_rnd
     ldr         x0, [x0]
     bl          SYM(SDL_RenderPresent)
-
-    LOADADDR    x0, g_evt
-    bl          SYM(SDL_WaitEvent)
-
-    LOADADDR    x0, g_evt
-    ldr         w0, [x0, #0]    // SDL_Event.type
-    cmp         w0, #0x100
-    b.ne        LBL(loop)
 #endif
     
+    b           LBL(main_loop)
+LBL(main_loop_done):
     mov         w0, #0
     b           LBL(end)
 LBL(sdl_fail):
