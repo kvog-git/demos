@@ -32,6 +32,9 @@ g_evt: .zero 128        // SDL_Event
 g_rnd: .zero 8          // SDL_Renderer *
 g_wnd: .zero 8          // SDL_Window *
 
+g_fbufmap: .zero 8       // frame buffer data
+g_fstride: .zero 4       // frame buffer stride
+
 // ================================================================================================
 // Code
 // ================================================================================================
@@ -64,8 +67,14 @@ g_wnd: .zero 8          // SDL_Window *
 
 // entry point
 SYM(main):
-    stp         x29, x30, [sp, #-16]!
+    stp         x29, x30, [sp, #-48]!
     mov         x29, sp
+    stp         x19, x20, [sp, #16]
+    stp         x21, x22, [sp, #32]
+    mov         x19, #0         // x19: SDL_Window *
+    mov         x20, #0         // x20: SDL_Renderer *
+    mov         x21, #0         // x21: SDL_Texture *
+    mov         x22, #0         // x22: spare
 
     mov         w0, #0x30       // SDL_INIT_VIDEO | SDL_INIT_AUDIO
     bl          SYM(SDL_Init)
@@ -79,6 +88,7 @@ SYM(main):
     bl          SYM(SDL_CreateWindow)
     cbz         x0, LBL(sdl_fail)
 
+    mov         x19, x0
     LOADADDR    x9, g_wnd
     str         x0, [x9]
 
@@ -86,8 +96,59 @@ SYM(main):
     bl          SYM(SDL_CreateRenderer)
     cbz         x0, LBL(sdl_fail)
 
+    mov         x20, x0
     LOADADDR    x9, g_rnd
     str         x0, [x9]
+
+    mov         x0, x20
+    mov         w1, #0x2004             // SDL_PIXELFORMAT_ARGB8888
+    movk        w1, #0x1636, lsl 16
+    mov         w2, #1                  // SDL_TEXTUREACCESS_STREAMING
+    mov         w3, VP_W
+    mov         w4, VP_H
+    bl          SYM(SDL_CreateTexture)
+    cbz         x0, LBL(sdl_fail)
+
+    mov         x21, x0
+
+    mov         x0, x21
+    mov         x1, #0
+    LOADADDR    x2, g_fbufmap
+    LOADADDR    x3, g_fstride
+    bl          SYM(SDL_LockTexture)
+    tst         x0, #0xFF
+    b.eq        LBL(sdl_fail)
+
+    //  x9: x
+    // x10: y
+    // x11: row
+    // w12: stride
+    // w13: color
+    // x14: tmp
+    mov         x10, #0
+    LOADADDR    x11, g_fbufmap
+    ldr         x11, [x11]
+    LOADADDR    x12, g_fstride 
+    ldr         w12, [x12]
+    //                  AARR
+    movz        w13, #0xFF00, lsl 16
+LBL(blit1):
+    mov         x9, #0
+    mov         x14, x11
+LBL(blit2):
+    str         w13, [x14]
+    add         x14, x14, #4
+    add         x9, x9, #1
+    cmp         x9, VP_W
+    b.lt        LBL(blit2)
+
+    add         x11, x11, x12
+    add         x10, x10, #1
+    cmp         x10, VP_H
+    b.lt        LBL(blit1)
+
+    mov         x0, x21
+    bl          SYM(SDL_UnlockTexture)
 
 // main loop start
 LBL(main_loop):
@@ -104,25 +165,29 @@ LBL(main_loop):
 
 // main loop, after polling inputs
 LBL(main_loop_render):
-
 #if 1
     // test: blit green
-    LOADADDR    x0, g_rnd
-    ldr         x0, [x0]
+    mov         x0, x20
     mov         w1, #0x00
     mov         w2, #0xFF
     mov         w3, #0x00
     mov         w4, #0xFF
     bl          SYM(SDL_SetRenderDrawColor)
 
-    LOADADDR    x0, g_rnd
-    ldr         x0, [x0]
+    mov         x0, x20
     bl          SYM(SDL_RenderClear)
-
-    LOADADDR    x0, g_rnd
-    ldr         x0, [x0]
-    bl          SYM(SDL_RenderPresent)
 #endif
+
+    mov         x0, x20
+    mov         x1, x21
+    mov         x2, #0
+    mov         x3, #0
+    bl          SYM(SDL_RenderTexture)
+    tst         x0, #0xFF
+    b.eq        LBL(sdl_fail)
+
+    mov         x0, x20
+    bl          SYM(SDL_RenderPresent)
     
     b           LBL(main_loop)
 LBL(main_loop_done):
@@ -134,12 +199,13 @@ LBL(sdl_fail):
     mov         x2, x0
     mov         w0, #0x10
     LOADADDR    x1, s_microshmup_error
-    LOADADDR    x9, g_wnd
-    ldr         x3, [x9]
+    mov         x3, x19
     bl          SYM(SDL_ShowSimpleMessageBox)
 
     mov         w0, #1
 LBL(end):
-    ldp         x29, x30, [sp], #16
+    ldp         x21, x22, [sp, #32]
+    ldp         x19, x20, [sp, #16]
+    ldp         x29, x30, [sp], #48
     ret
     
