@@ -2,10 +2,10 @@
 // Basic offline shadertoy renderer. Textures are not supported.
 //
 // Usage:
-//     $ ffmpeg-shadertoy <input.glsl> <output> -w <width> -h <height> -r <fps> -t <length>
+//     $ ffshadertoy <input.glsl> <output> -w <width> -h <height> -r <fps> -t <length>
 //
 //     For example, download https://www.shadertoy.com/view/Ms2SD1 as seascape.glsl and run:
-//     $ ffmpeg-shadertoy ./seascape.glsl -w 1920 -h 1080 -r 60 seascape.mkv
+//     $ ffshadertoy ./seascape.glsl -w 1920 -h 1080 -r 60 seascape.mkv
 //
 // Changelog:
 //     6/7/2026:  Initial release
@@ -185,7 +185,7 @@ int main(int argc, const char **argv)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_Window *wnd = SDL_CreateWindow("ffmpeg-shadertoy", a_w, a_h, SDL_WINDOW_OPENGL);
+    SDL_Window *wnd = SDL_CreateWindow("ffshadertoy", a_w, a_h, SDL_WINDOW_OPENGL);
     if (!wnd) {
         ASSERT_SDL(0, "Failed to create window");
     }
