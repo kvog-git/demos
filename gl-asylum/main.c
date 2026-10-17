@@ -16,7 +16,7 @@
 // ================================================================================================
 
 #define GLAD_GL_IMPLEMENTATION
-#include "../_common/c/thirdparty/glad33/gl.h"
+#include "../_/c/thirdparty/glad33/gl.h"
 
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL.h>
