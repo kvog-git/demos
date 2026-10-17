@@ -32,8 +32,8 @@ g_evt: .zero 128        // SDL_Event
 g_rnd: .zero 8          // SDL_Renderer *
 g_wnd: .zero 8          // SDL_Window *
 
-g_fbufmap: .zero 8       // frame buffer data
-g_fstride: .zero 4       // frame buffer stride
+g_fbufmap: .zero 8      // frame buffer data
+g_fstride: .zero 4      // frame buffer stride
 
 // ================================================================================================
 // Code
@@ -195,12 +195,16 @@ LBL(main_loop_done):
     b           LBL(end)
 LBL(sdl_fail):
     bl          SYM(SDL_GetError)
+    mov         x22, x0
 
     mov         x2, x0
     mov         w0, #0x10
     LOADADDR    x1, s_microshmup_error
     mov         x3, x19
     bl          SYM(SDL_ShowSimpleMessageBox)
+
+    mov         x0, x22
+    bl          SYM(puts)
 
     mov         w0, #1
 LBL(end):
