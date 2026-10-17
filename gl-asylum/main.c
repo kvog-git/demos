@@ -2,7 +2,8 @@
 // Procedurally generated 3D scene in OpenGL
 //
 // Changelog:
-//     4/27/2026:  Initial release
+//      04/27/2026: Initial release
+//      10/16/2026: Add collision, minor cleanup
 //
 // License:
 //     Copyright (c) 2026 Hunter Kvalevog
@@ -656,6 +657,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
   GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
   GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
 
+  const float border[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+
   GLCHECK(glGenFramebuffers(1, &G.depth_fbo));
   GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, G.depth_fbo));
   GLCHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
@@ -829,14 +833,28 @@ SDL_AppResult SDL_AppIterate(void* appstate)
   }
 
   // Collisions
-  for (int i = 0; i < 8; ++i) {
-    const int xoff[] = {  0,  1, 1, 1, 0, -1, -1, -1 };
-    const int zoff[] = { -1, -1, 0, 1, 1,  1,  0, -1 };
-    const int wall_x = (int)G.cam_pos[0] + xoff[i];
-    const int wall_z = (int)G.cam_pos[2] + zoff[i];
-    if (cube(wall_x, wall_z) < 1) {
-      continue;
+  const float player_r = 0.25f;
+  const int px = (int)SDL_floorf(G.cam_pos[0] + 0.5f);
+  const int pz = (int)SDL_floorf(G.cam_pos[2] + 0.5f);
+  for (int dz = -1; dz <= 1; ++dz) {
+  for (int dx = -1; dx <= 1; ++dx) {
+    const int cx = px + dx;
+    const int cz = pz + dz;
+    if (cube(cx, cz) < 1) {
+        continue;
     }
+
+    const float nx = SDL_clamp(G.cam_pos[0], cx - 0.5f, cx + 0.5f);
+    const float nz = SDL_clamp(G.cam_pos[2], cz - 0.5f, cz + 0.5f);
+    const float ox = G.cam_pos[0] - nx;
+    const float oz = G.cam_pos[2] - nz;
+    const float d2 = ox * ox + oz * oz;
+    if (d2 > 0.0f && d2 < player_r * player_r) {
+        const float d = SDL_sqrtf(d2);
+        G.cam_pos[0] += ox / d * (player_r - d);
+        G.cam_pos[2] += oz / d * (player_r - d);
+    }
+  }
   }
 
   // FOV mod
