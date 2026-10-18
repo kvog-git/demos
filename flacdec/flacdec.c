@@ -28,6 +28,7 @@
 #endif
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -254,7 +255,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "sample rate: %d\n", sample_rate);
     fprintf(stderr, "channels:    %d\n", num_channels);
     fprintf(stderr, "bit depth:   %d\n", bit_depth);
-    fprintf(stderr, "num samples: %llu\n", num_samples);
+    fprintf(stderr, "num samples: %" PRId64 "\n", num_samples);
 
     // Try to open ffplay for playback
     FILE *ffplay = 0;
@@ -331,7 +332,7 @@ int main(int argc, char **argv)
                 frame_num |= (b & 0x3F);
             }
         }
-        SPEW("+frame %llu\n", frame_num);
+        SPEW("+frame %" PRId64 "\n", frame_num);
 
         // Parse block size (9.1.1)
         uint32_t block_size = 0;
