@@ -65,6 +65,50 @@ g_fstride: .zero 4      // frame buffer stride
 
 .global SYM(main)
 
+// draw solid color rect
+// w0: x (top-left)
+// w1: y (top-left)
+// w2: width
+// w3: height
+// w4: color
+SYM(draw_rect):
+    stp         x29, x30, [sp, #-16]!
+    mov         x29, sp
+
+    LOADADDR    x9, g_fbufmap
+    ldr         x9, [x9]
+
+    LOADADDR    x10, g_fstride
+    ldr         w10, [x10]
+
+    // x offset
+    mov         w11, #4
+    mul         w11, w11, w0
+    add         x9, x9, w11, uxtw
+
+    // y offset
+    mul         w11, w10, w1
+    add         x9, x9, w11, uxtw
+
+    mov         w12, #0         // y cursor
+LBL(draw_rect_y):
+    mov         w11, #0         // x cursor
+    mov         x13, x9         // row
+LBL(draw_rect_x):
+    str         w4, [x13]
+    add         x13, x13, #4
+    add         w11, w11, #1
+    cmp         w11, w2
+    b.lt        LBL(draw_rect_x)
+
+    add         x9, x9, w10, uxtw
+    add         w12, w12, #1
+    cmp         w12, w3
+    b.lt        LBL(draw_rect_y)
+
+    ldp         x29, x30, [sp], #16
+    ret
+
 // entry point
 SYM(main):
     stp         x29, x30, [sp, #-48]!
@@ -111,45 +155,6 @@ SYM(main):
 
     mov         x21, x0
 
-    mov         x0, x21
-    mov         x1, #0
-    LOADADDR    x2, g_fbufmap
-    LOADADDR    x3, g_fstride
-    bl          SYM(SDL_LockTexture)
-    tst         x0, #0xFF
-    b.eq        LBL(sdl_fail)
-
-    //  x9: x
-    // x10: y
-    // x11: row
-    // w12: stride
-    // w13: color
-    // x14: tmp
-    mov         x10, #0
-    LOADADDR    x11, g_fbufmap
-    ldr         x11, [x11]
-    LOADADDR    x12, g_fstride 
-    ldr         w12, [x12]
-    //                  AARR
-    movz        w13, #0xFF00, lsl 16
-LBL(blit1):
-    mov         x9, #0
-    mov         x14, x11
-LBL(blit2):
-    str         w13, [x14]
-    add         x14, x14, #4
-    add         x9, x9, #1
-    cmp         x9, VP_W
-    b.lt        LBL(blit2)
-
-    add         x11, x11, x12
-    add         x10, x10, #1
-    cmp         x10, VP_H
-    b.lt        LBL(blit1)
-
-    mov         x0, x21
-    bl          SYM(SDL_UnlockTexture)
-
 // main loop start
 LBL(main_loop):
     LOADADDR    x0, g_evt
@@ -163,20 +168,26 @@ LBL(main_loop):
     b.eq        LBL(main_loop_done)
     b           LBL(main_loop)
 
-// main loop, after polling inputs
+// main loop start
 LBL(main_loop_render):
-#if 1
-    // test: blit green
-    mov         x0, x20
-    mov         w1, #0x00
-    mov         w2, #0xFF
-    mov         w3, #0x00
-    mov         w4, #0xFF
-    bl          SYM(SDL_SetRenderDrawColor)
+    mov         x0, x21
+    mov         x1, #0
+    LOADADDR    x2, g_fbufmap
+    LOADADDR    x3, g_fstride
+    bl          SYM(SDL_LockTexture)
+    tst         x0, #0xFF
+    b.eq        LBL(sdl_fail)
 
-    mov         x0, x20
-    bl          SYM(SDL_RenderClear)
-#endif
+    // test: draw rect
+    mov         w0, #0
+    mov         w1, #0
+    mov         w2, #100
+    mov         w3, #100
+    mov         w4, #0xFFFFFFFF
+    bl          SYM(draw_rect)
+
+    mov         x0, x21
+    bl          SYM(SDL_UnlockTexture)
 
     mov         x0, x20
     mov         x1, x21
