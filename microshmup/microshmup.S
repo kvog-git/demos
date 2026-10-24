@@ -63,7 +63,9 @@ g_fstride: .zero 4      // frame buffer stride
 #endif
 .endm
 
-.global SYM(main)
+// ================================================================================================
+// Code
+// ================================================================================================
 
 // draw solid color rect
 // w0: x (top-left)
@@ -109,6 +111,7 @@ LBL(draw_rect_x):
     ldp         x29, x30, [sp], #16
     ret
 
+.global SYM(main)
 // entry point
 SYM(main):
     stp         x29, x30, [sp, #-48]!
@@ -178,12 +181,13 @@ LBL(main_loop_render):
     tst         x0, #0xFF
     b.eq        LBL(sdl_fail)
 
-    // test: draw rect
+    // clear screen
     mov         w0, #0
     mov         w1, #0
-    mov         w2, #100
-    mov         w3, #100
-    mov         w4, #0xFFFFFFFF
+    mov         w2, VP_W
+    mov         w3, VP_H
+    //                 AARRGGBB
+    mov         w4, #0xFF000000
     bl          SYM(draw_rect)
 
     mov         x0, x21
