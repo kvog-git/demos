@@ -1,115 +1,20 @@
-// ================================================================================================
-// Constants
-// ================================================================================================
-
-.equ VP_W, 800
-.equ VP_H, 600
-
-// ================================================================================================
-// Read-only data
-// ================================================================================================
-#ifdef __APPLE__
-    .section __TEXT,__const
-#else
-    .section .rodata
-#endif
-
-s_microshmup:           .asciz "microshmup"
-s_microshmup_error:     .asciz "microshmup - error"
-s_software:             .asciz "software"
+#include "microshmup_core.S"
+#include "microshmup_data.S"
+#include "microshmup_render.S"
 
 // ================================================================================================
 // Mutable data
 // ================================================================================================
-#ifdef __APPLE__
-    .section __DATA,__bss
-#else
-    .section .bss
-#endif
-    .p2align 3
+SECTION_BSS
 
 g_evt: .zero 128        // SDL_Event
 g_rnd: .zero 8          // SDL_Renderer *
 g_wnd: .zero 8          // SDL_Window *
 
-g_fbufmap: .zero 8      // frame buffer data
-g_fstride: .zero 4      // frame buffer stride
-
 // ================================================================================================
 // Code
 // ================================================================================================
-
-#ifdef __APPLE__
-    .section __TEXT,__text
-#else
-    .section .text
-#endif
-
-#ifdef __APPLE__
-#   define LBL(name) L ## name
-#   define SYM(name) _##name
-#else
-#   define LBL(name) .L ## name
-#   define SYM(name) name
-#endif
-
-.macro LOADADDR reg, sym
-#ifdef __APPLE__
-    adrp        \reg, \sym\()@PAGE
-    add         \reg, \reg, \sym\()@PAGEOFF
-#else
-    adrp        \reg, \sym
-    add         \reg, \reg, :lo12:\sym
-#endif
-.endm
-
-// ================================================================================================
-// Code
-// ================================================================================================
-
-// draw solid color rect
-// w0: x (top-left)
-// w1: y (top-left)
-// w2: width
-// w3: height
-// w4: color
-SYM(draw_rect):
-    stp         x29, x30, [sp, #-16]!
-    mov         x29, sp
-
-    LOADADDR    x9, g_fbufmap
-    ldr         x9, [x9]
-
-    LOADADDR    x10, g_fstride
-    ldr         w10, [x10]
-
-    // x offset
-    mov         w11, #4
-    mul         w11, w11, w0
-    add         x9, x9, w11, uxtw
-
-    // y offset
-    mul         w11, w10, w1
-    add         x9, x9, w11, uxtw
-
-    mov         w12, #0         // y cursor
-LBL(draw_rect_y):
-    mov         w11, #0         // x cursor
-    mov         x13, x9         // row
-LBL(draw_rect_x):
-    str         w4, [x13]
-    add         x13, x13, #4
-    add         w11, w11, #1
-    cmp         w11, w2
-    b.lt        LBL(draw_rect_x)
-
-    add         x9, x9, w10, uxtw
-    add         w12, w12, #1
-    cmp         w12, w3
-    b.lt        LBL(draw_rect_y)
-
-    ldp         x29, x30, [sp], #16
-    ret
+SECTION_TEXT
 
 .global SYM(main)
 // entry point
@@ -227,4 +132,3 @@ LBL(end):
     ldp         x19, x20, [sp, #16]
     ldp         x29, x30, [sp], #48
     ret
-    
