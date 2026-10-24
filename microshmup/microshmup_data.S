@@ -14,6 +14,13 @@ s_microshmup:           .asciz "microshmup"
 s_microshmup_error:     .asciz "microshmup - error"
 s_software:             .asciz "software"
 
+s_test:                 .asciz "hello world"
+
+.p2align 3
+.global g_font 
+g_font:
+    .incbin "data/IBM_VGA_8x14.bin"
+
 // ================================================================================================
 // Mutable data
 // ================================================================================================

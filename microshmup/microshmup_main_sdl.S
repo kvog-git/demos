@@ -36,7 +36,7 @@ SYM(main):
     LOADADDR    x0, s_microshmup
     mov         w1, VP_W
     mov         w2, VP_H
-    mov         x3, #0
+    mov         x3, #0x2000
     bl          SYM(SDL_CreateWindow)
     cbz         x0, LBL(sdl_fail)
 
@@ -62,6 +62,9 @@ SYM(main):
     cbz         x0, LBL(sdl_fail)
 
     mov         x21, x0
+
+    mov         w1, #0                  // SDL_SCALEMODE_NEAREST
+    bl          SYM(SDL_SetTextureScaleMode)
 
 // main loop start
 LBL(main_loop):
@@ -93,7 +96,25 @@ LBL(main_loop_render):
     mov         w3, VP_H
     //                 AARRGGBB
     mov         w4, #0xFF000000
-    bl          SYM(draw_rect)
+    bl          SYM(r_quad)
+
+#if 1
+    // test: draw character
+    mov         w0, #32
+    mov         w1, #32
+    mov         w2, #0xFFFFFFFF
+    mov         w3, #0x41
+    bl          SYM(r_char)
+#endif
+
+#if 1
+    // test: draw string
+    mov         w0, #32
+    mov         w1, #64
+    mov         w2, #0xFFFFFFFF
+    LOADADDR    x3, s_test
+    bl          SYM(r_chars)
+#endif
 
     mov         x0, x21
     bl          SYM(SDL_UnlockTexture)
