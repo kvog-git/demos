@@ -1,6 +1,6 @@
 // ================================================================================================
-// Code written while following chapter 8 of the MarioKart Wii ARM64 assembly tutorial:
-// https://mariokartwii.com/arm64/ch8.html
+// Code written while following chapter 7 of the MarioKart Wii ARM64 assembly tutorial:
+// https://mariokartwii.com/arm64/ch7.html
 //
 // License:
 //     Copyright (c) 2026 Hunter Kvalevog
@@ -12,27 +12,35 @@
 //     WITH REGARD TO THIS SOFTWARE.
 // ================================================================================================
 
-#include "../_/aarch64/common.S"
+#include "../_/arm64/common.S"
 
 TEXT_SEGMENT
 
 .global SYM(main)
 
 SYM(main):
-    // move shift
-    mov x0, #0xFFFFFFFFFFFFFFFF
-    lsl x0, x0, #32
+    // Add
+    mov x0, #1
+    mov x1, #2
+    add x2, x0, x1
 
-    mov x1, #0xFFFFFFFFFFFFFFFF
-    movk x1, #0x1234, lsl 32
+    // Add immediate
+    add x3, x2, #0x100
 
-    mov x2, #0xFFFFFFFFFFFFFFFF
-    movz x2, #0x1234, lsl 32
+    // Subtract immediate
+    mov x4, x3
+    sub x4, x4, #0x100
 
-    mov x3, #0xFFFFFFFFFFFFFFFF
-    movk x3, #0x1111, lsl 48
-    movk x3, #0x2222, lsl 32
-    movk x3, #0x3333, lsl 16
-    movk x3, #0x4444
+    // Multiply
+    mov x5, #5
+    mul x5, x4, x5
+
+    // Divide
+    udiv x6, x5, x4
+    mov x7, #-1
+    sdiv x7, x6, x7
+
+    neg x8, x7
 
     brk #0 // (lldb) register read
+

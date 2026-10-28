@@ -7,7 +7,7 @@ Home page               https://git.kvog.sh/demos
 Mirror                  https://codeberg.org/kvog/demos
 Mirror                  https://github.com/kvog-git/demos
 
-aarch64/                AArch64 assembly experiments
+arm64/                  ARM64 assembly experiments
 ffshadertoy             Basic offline Shadertoy renderer
 flacdec                 FLAC decoder
 gl-asylum               Procedurally generated 3D OpenGL scene
