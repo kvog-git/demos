@@ -1,4 +1,4 @@
-project('aarch64', 'c', default_options: [ 'warning_level=3' ])
+project('arm64', 'c', default_options: [ 'warning_level=3' ])
 
 executable('kusswurm_ch11', [ 'kusswurm_ch11.c', 'kusswurm_ch11.S' ])
 executable('kusswurm_ch12', [ 'kusswurm_ch12.c', 'kusswurm_ch12.S' ])
