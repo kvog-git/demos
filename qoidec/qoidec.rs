@@ -1,5 +1,5 @@
 // ================================================================================================
-// Basic Quite Ok Image (QOI) to PPM converter written to learn Rust
+// Basic Quite OK Image (QOI) to PPM converter written to learn Rust
 //
 // ref: https://qoiformat.org/qoi-specification.pdf
 // ref: https://github.com/phoboslab/qoi/blob/master/qoi.h
@@ -7,6 +7,7 @@
 //
 // Changelog:
 //     9/29/2026: Initial release
+//    10/28/2026: Support transparency
 //
 // License:
 //     Copyright (c) 2026 Hunter Kvalevog
@@ -35,11 +36,7 @@ struct Frame {
 
 impl Frame {
     pub fn new(w: u32, h: u32) -> Self {
-        Self {
-            w:   w,
-            h:   h,
-            buf: Vec::with_capacity((w * h) as usize),
-        }
+        Self { w, h,  buf: Vec::with_capacity((w * h) as usize) }
     }
 }
 
@@ -145,15 +142,10 @@ fn encode_ppm(out: &mut impl Write, frame: Frame) -> io::Result<()> {
     out.write_all(b"255\n")?;
 
     for p in frame.buf {
-        // just drop the alpha channel lol
-        /*
-        let val =
-            (p.0 as u32)       |
-            (p.1 as u32) << 8  |
-            (p.2 as u32) << 16;
-        out.write_all(&val.to_le_bytes()[0..3])?;
-        */
-        out.write_all(&[p.0, p.1, p.2])?;
+        // PPM does not support alpha, just blend to black
+        let a = p.3 as u16;
+        let blend = |c: u8| ((c as u16 * a + 127) / 255) as u8;
+        out.write_all(&[blend(p.0), blend(p.1), blend(p.2)])?;
     }
 
     out.flush()?;
@@ -181,17 +173,8 @@ fn main() -> ExitCode {
     };
     let mut inp = io::BufReader::new(inp);
 
-    let out = match fs::File::create(out_path) {
-        Ok(f)  => f,
-        Err(e) => {
-            eprintln!("failed to open output: {e}");
-            return ExitCode::FAILURE;
-        },
-    };
-    let mut out = io::BufWriter::new(out);
-
     let mut hdr = [0u8; 4];
-    if inp.read_exact(&mut hdr).is_err() || &hdr != b"qoif" {
+    if inp.read_exact(&mut hdr).is_err() || hdr != *b"qoif" {
         eprintln!("invalid input file");
         return ExitCode::FAILURE;
     }
@@ -204,6 +187,15 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         },
     };
+
+    let out = match fs::File::create(out_path) {
+        Ok(f)  => f,
+        Err(e) => {
+            eprintln!("failed to open output: {e}");
+            return ExitCode::FAILURE;
+        },
+    };
+    let mut out = io::BufWriter::new(out);
 
     if let Err(e) = encode_ppm(&mut out, frame) {
         eprintln!("error while encoding: {e}");
