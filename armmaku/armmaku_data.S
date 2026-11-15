@@ -10,8 +10,8 @@
 // ================================================================================================
 SECTION_RODATA
 
-s_microshmup:           .asciz "microshmup"
-s_microshmup_error:     .asciz "microshmup - error"
+s_armmaku:              .asciz "armmaku"
+s_armmaku_error:        .asciz "armmaku - error"
 s_software:             .asciz "software"
 
 s_test:                 .asciz "hello world"

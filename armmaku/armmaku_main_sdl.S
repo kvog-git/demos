@@ -1,6 +1,6 @@
-#include "microshmup_core.S"
-#include "microshmup_data.S"
-#include "microshmup_render.S"
+#include "armmaku_core.S"
+#include "armmaku_data.S"
+#include "armmaku_render.S"
 
 // ================================================================================================
 // Mutable data
@@ -33,7 +33,7 @@ SYM(main):
     tst         x0, #0xFF
     b.eq        LBL(sdl_fail)
 
-    LOADADDR    x0, s_microshmup
+    LOADADDR    x0, s_armmaku
     mov         w1, VP_W
     mov         w2, VP_H
     mov         x3, #0x2000
@@ -140,7 +140,7 @@ LBL(sdl_fail):
 
     mov         x2, x0
     mov         w0, #0x10
-    LOADADDR    x1, s_microshmup_error
+    LOADADDR    x1, s_armmaku_error
     mov         x3, x19
     bl          SYM(SDL_ShowSimpleMessageBox)
 
