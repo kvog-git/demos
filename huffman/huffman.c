@@ -355,9 +355,7 @@ uint8_t *decompress(const uint8_t *bbuf, size_t blen, size_t *olen)
     Node *root = read_tree(&br);
 
     for (size_t i = 0; i < *olen; ++i)
-    {
         obuf[i] = traverse(&br, root)->sym;
-    }
 
 #ifdef DEBUG
     printf("%.*s\n", (int)*olen, (const char *)obuf);
